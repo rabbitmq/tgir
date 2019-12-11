@@ -25,6 +25,28 @@ $(COMPOSE):
 	$(error Please install docker-compose)
 endif
 
+ifeq ($(PLATFORM),Darwin)
+FFMPEG := /usr/local/bin/ffmpeg
+$(FFMPEG):
+	@brew install ffmpeg
+else
+FFMPEG ?= /usr/bin/ffmpeg
+$(FFMPEG):
+	$(error Please install ffmpeg)
+endif
+
+CURL ?= /usr/bin/curl
+ifneq ($(PLATFORM),Darwin)
+$(CURL):
+	$(error Please install curl)
+endif
+
+ifeq ($(PLATFORM),Darwin)
+OPEN := open
+else
+OPEN := xdg-open
+endif
+
 
 
 ### TARGETS ###
@@ -64,3 +86,19 @@ preview_readme: $(DOCKER) ## pre | Preview README & live reload on edit - http:/
 	  mbentley/grip --context=. 0.0.0.0:5000 $(GRIP_USER) $(GRIP_PASS)
 .PHONY: pre
 pre: preview_readme
+
+# https://www.bugcodemaster.com/article/convert-video-animated-gif-using-ffmpeg
+# https://trac.ffmpeg.org/wiki/Scaling
+#
+# Unused, keeping here for reference
+GITHUB_WIDTH = scale='min(866,iw):-1',
+GIF_SCALE =
+.PHONY: gif
+gif: $(FFMPEG) ## gif | Convert MP4s to GIFs
+ifndef F
+	$(error F variable must reference a valid mp4 file path)
+endif
+	@$(FFMPEG) -i $(F) \
+	  -hide_banner \
+	  -vf "$(GIF_SCALE)fps=1" \
+	  $(subst .mp4,.gif,$(F))
