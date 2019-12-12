@@ -7,37 +7,46 @@
 
 ## Introduction
 
-[Gerhard Lazu](https://gerhard.io), [RabbitMQ Core Engineer](https://github.com/rabbitmq/rabbitmq-server/pulls?utf8=%E2%9C%93&q=author%3Agerhard)
+Hi everybody, I am [Gerhard Lazu](https://gerhard.io), [a RabbitMQ Engineer](https://github.com/rabbitmq/rabbitmq-server/pulls?utf8=%E2%9C%93&q=author%3Agerhard) based in London.
 
-In the next hour, I will show you what happens in RabbitMQ from the perspective of the new metrics system that we have shipped in RabbitMQ 3.8.
-This was available for over 2 months now, since early October.
+In the next hour, we will see what happens within RabbitMQ by using the new metrics system that we have shipped in RabbitMQ 3.8.
+We are currently on RabbitMQ 3.8.2, meaning that the 3.8 series was out for about 2 months now, since early October.
+Yes, that's right, we usually ship 1 patch release per month, across all supported RabbitMQ minors, currently 3.7 & 3.8.
 
-This new metrics system is an evolution of what many of you know & use in today's RabbitMQ Management
+...
 
-I want you to see RabbitMQ in a completely different light,
+The new metrics system in 3.8 is an evolution of what many of you know & use in today's RabbitMQ Management
+
+In this webinar, I want you to see RabbitMQ in a different light,
 [even when it is struggling](rabbitmq-management-unresponsive-43.gif),
-and understand why that is.
+and understand why that is, as well as give you a few tips about what to do.
 
-Because this webinar is a demo, please ask questions as they come up.
-I will do my best to answer them as we make progress through the content.
+Because this webinar is a series of demos, please ask questions as they come up.
+I will stop at regular intervals and answer as many of your questions as possible.
 
 ...
 
 OK, so we will start by setting up the new metrics system in RabbitMQ 3.8 from scratch.
-This includes integrating with Prometheus & Grafana, which is something that you may not need to do if you are using RabbitMQ as a service,
-but it's important to understand how the various pieces fit together.
+This includes integrating with Prometheus & Grafana.
+Even though this is something that you may not need to do if you are using RabbitMQ as a service,
+for example RabbitMQ for Kubernetes, and I belive RabbitMQ for PCF as well,
+it's important to understand how the various pieces fit together.
 
 ...
 
-We will continue by learning about the new Grafana dashboards that we maintain,
-and how can they help you understand what happens within the various layers that make the RabbitMQ service.
+After we have covered the basics,
+we will continue by learning about the new Grafana dashboards that our team maintains:
+* where to find them
+* how to install them
+* and how to use them
 
-There is something for everyone: developers, operators & even Erlang experts.
+As we do this, I want you to remember that the end-goal is to understand RabbitMQ.
 
 ...
 
-To finish off, we will show you how to best share the state of your RabbitMQ deployment when you ask for help.
-This will help us, help you get the best experience out of RabbitMQ.
+To finish off, we will see how to share the state of RabbitMQ deployments when asking for help.
+In order for our team to help you, and improve RabbitMQ, we need to understand what is going on.
+My hope is that going forward, we will have more than screenshots and logs to go by.
 
 ...
 
@@ -47,15 +56,15 @@ OK, so...
 
 I will be using Docker for Desktop in my demo to keep us focused on the task at hand.
 
-I don't think that I need to mention this, but just to be explicit about it, I would not recommend that you do this in production.
+I don't think that I need to mention this, but just to be explicit, I do not recommend that you do this in production.
 
-So let's start a single node RabbitMQ with Management enabled:
+Ok, with that out of the way, let's start a single node RabbitMQ with Management enabled:
 
 ```sh
 # make rabbitmq
 /usr/local/bin/docker run -it --rm \
-  --name getstarted \
-  --hostname getstarted \
+  --name getstarted0 \
+  --hostname getstarted0 \
   --network 1212 \
   -p 15672:15672 \
   -p 15692:15692 \
@@ -78,7 +87,7 @@ To start a PerfTest instance:
 
 ```sh
 # make rabbitmq_enable_prometheus
-docker exec -it getstarted rabbitmq-plugins enable rabbitmq_prometheus
+docker exec -it getstarted0 rabbitmq-plugins enable rabbitmq_prometheus
 ```
 
 What do the new Prometheus metrics look like? http://localhost:15692/metrics
@@ -113,7 +122,7 @@ vi /etc/prometheus/prometheus.yml
 
 #  - job_name: 'rabbitmq'
 #    static_configs:
-#    - targets: ['getstarted:15692']
+#    - targets: ['getstarted0:15692']
 
 pkill -HUP prometheus
 ```

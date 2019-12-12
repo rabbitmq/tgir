@@ -4,8 +4,7 @@ DOCKER_NETWORK := 1212
 
 # https://hub.docker.com/_/rabbitmq/tags
 RABBITMQ_DOCKER_IMAGE := rabbitmq:3.8.2-management
-RABBITMQ_CONTAINER_NAME := getstarted
-# RABBITMQ_CONTAINER_NAME := getstarted0
+RABBITMQ_CONTAINER_NAME := getstarted0
 RABBITMQ_MANAGEMENT_PORT := 15672
 RABBITMQ_PROMETHEUS_PORT := 15692
 

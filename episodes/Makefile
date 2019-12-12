@@ -83,6 +83,7 @@ preview_readme: $(DOCKER)
 	  --volume $(CURDIR):/data \
 	  --volume $(HOME)/.grip:/.grip \
 	  --expose 5000 --publish 5000:5000 \
+	  --name readme \
 	  mbentley/grip --context=. 0.0.0.0:5000 $(GRIP_USER) $(GRIP_PASS)
 .PHONY: pre
 pre: preview_readme
