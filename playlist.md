@@ -1,2 +1,2 @@
 # TGIR Playlist Index
-- [001: Understand RabbitMQ](episodes/1/README.md)
+- [001: Understand RabbitMQ Webinar, 2019-12-12](episodes/001/README.md)

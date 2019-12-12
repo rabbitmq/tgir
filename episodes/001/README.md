@@ -154,15 +154,14 @@ Secondly, we need to configure Prometheus datasource in Grafana: http://localhos
 
 Lastly, let's import a Grafana dashboard: http://localhost:3000/dashboards + https://grafana.com/orgs/rabbitmq
 
+Now that we understand the mechanics of how the different pieces fit together,
+let us shift focus on what this dashboard is actually trying to show us,
+and that we are not seeing here.
 
-Now that we understand the mechanics of how the different pieces fit together, let us shift focus on what this dashboard is actually trying to show us, and that we are not seeing here.
-
-## Developers: see RabbitMQ anti-patterns
+## Developers: see RabbitMQ anti-patterns & imbalances
 
 ## Developers: understand Quorum Queues
 
-## Operators: see imbalanced deployments
-
 ## Experts: unlock Erlang insights
 
-## All: share your context
+## All: share your context - ran out of time
