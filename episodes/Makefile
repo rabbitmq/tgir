@@ -67,7 +67,7 @@ define BASH_AUTOCOMPLETE
 endef
 .PHONY: bash_autocomplete
 bash_autocomplete: ## bac | Configure bash shell autocomplete - eval "$(make bash_autocomplete)"
-	@echo "$(BASH_AUTOCOMPLETE)"
+	echo "$(BASH_AUTOCOMPLETE)"
 .PHONY: bac
 bac: bash_autocomplete
 
@@ -79,7 +79,7 @@ GRIP_PASS := --pass $(GITHUB_PERSONAL_ACCESS_TOKEN)
 endif
 .PHONY: preview_readme
 preview_readme: $(DOCKER) ## pre | Preview README & live reload on edit - http://docker.localhost:5000
-	@$(DOCKER) run --interactive --tty --rm \
+	$(DOCKER) run --interactive --tty --rm \
 	  --volume $(CURDIR):/data \
 	  --volume $(HOME)/.grip:/.grip \
 	  --expose 5000 --publish 5000:5000 \
@@ -98,7 +98,7 @@ gif: $(FFMPEG) ## gif | Convert MP4s to GIFs
 ifndef F
 	$(error F variable must reference a valid mp4 file path)
 endif
-	@$(FFMPEG) -i $(F) \
+	$(FFMPEG) -i $(F) \
 	  -hide_banner \
 	  -vf "$(GIF_SCALE)fps=1" \
 	  $(subst .mp4,.gif,$(F))
