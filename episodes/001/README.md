@@ -7,39 +7,78 @@
 
 ## Introduction
 
-* [Gerhard Lazu](https://twitter.com/gerhardlazu), [RabbitMQ Core Engineer](https://github.com/rabbitmq/rabbitmq-server/pulls?utf8=%E2%9C%93&q=author%3Agerhard)
-* New metrics system in 3.8 based on Prometheus
-  * An evolution of RabbitMQ Management
-  * See RabbitMQ in a completely different light - [even when it is struggling](rabbitmq-management-unresponsive-43.gif)
-  * The primary goal is to **understand** RabbitMQ
-  * The secondary goal is to **improve** RabbitMQ & Erlang
-  * Lastly, we want you to have a better experience as you report issues
-* All content for this webinar is available at https://tgi.rabbitmq.com/001
-* If you want to follow along on your machine, `git clone https://github.com/rabbitmq/tgir && cd episodes/001`
-* I will stop after every section to answer a few questions
-  * Please feel free to ask questions as we make progress through the content
-  * Any unanswared questions I intend to address afterwards & share answers via https://tgi.rabbitmq.com/001
+[Gerhard Lazu](https://gerhard.io), [RabbitMQ Core Engineer](https://github.com/rabbitmq/rabbitmq-server/pulls?utf8=%E2%9C%93&q=author%3Agerhard)
 
-## How to get started with the new metrics in RabbitMQ 3.8?
+In the next hour, I will show you what happens in RabbitMQ from the perspective of the new metrics system that we have shipped in RabbitMQ 3.8.
+This was available for over 2 months now, since early October.
 
-Provided that we have Docker installed, let's start a single node RabbitMQ with Management enabled:
+This new metrics system is an evolution of what many of you know & use in today's RabbitMQ Management
+
+I want you to see RabbitMQ in a completely different light,
+[even when it is struggling](rabbitmq-management-unresponsive-43.gif),
+and understand why that is.
+
+Because this webinar is a demo, please ask questions as they come up.
+I will do my best to answer them as we make progress through the content.
+
+...
+
+OK, so we will start by setting up the new metrics system in RabbitMQ 3.8 from scratch.
+This includes integrating with Prometheus & Grafana, which is something that you may not need to do if you are using RabbitMQ as a service,
+but it's important to understand how the various pieces fit together.
+
+...
+
+We will continue by learning about the new Grafana dashboards that we maintain,
+and how can they help you understand what happens within the various layers that make the RabbitMQ service.
+
+There is something for everyone: developers, operators & even Erlang experts.
+
+...
+
+To finish off, we will show you how to best share the state of your RabbitMQ deployment when you ask for help.
+This will help us, help you get the best experience out of RabbitMQ.
+
+...
+
+OK, so...
+
+## How do we get started with the new metrics in RabbitMQ 3.8?
+
+I will be using Docker for Desktop in my demo to keep us focused on the task at hand.
+
+I don't think that I need to mention this, but just to be explicit about it, I would not recommend that you do this in production.
+
+So let's start a single node RabbitMQ with Management enabled:
 
 ```sh
 # make rabbitmq
-docker run -it --rm -p 15672:15672 -p 15692:15692 --name rabbitmq rabbitmq:3.8.2-management
+/usr/local/bin/docker run -it --rm \
+  --name getstarted \
+  --hostname getstarted \
+  --network 1212 \
+  -p 15672:15672 \
+  -p 15692:15692 \
+  rabbitmq:3.8.2-management
 ```
 
 Is RabbitMQ up and running as expected? http://localhost:15672
 
+Before we continue, we want to put some load on this RabbitMQ node so that there are more metrics to look at when we get to that point.
 
-### 1/n. Enable the `rabbitmq_prometheus` plugin
+As some of you may now, PerfTest has been the official RabbitMQ benchmarking tool for many years now.
+
+To start a PerfTest instance:
+
+```
+# make perftest
+```
+
+### 1/3. Enable the `rabbitmq_prometheus` plugin
 
 ```sh
-# make rabbitmq_exec
-docker exec -it rabbitmq bash
-
-rabbitmq-plugins enable rabbitmq_prometheus
-^D
+# make rabbitmq_enable_prometheus
+docker exec -it getstarted rabbitmq-plugins enable rabbitmq_prometheus
 ```
 
 What do the new Prometheus metrics look like? http://localhost:15692/metrics
@@ -48,11 +87,18 @@ Notice the new port, which is different from the Management one.
 
 Learn more about this new plugin in RabbitMQ 3.8: https://github.com/rabbitmq/rabbitmq-prometheus
 
-### 2/n. Configure Prometheus to pull RabbitMQ metrics periodically
+### 2/3. Configure Prometheus to pull RabbitMQ metrics periodically
+
+We first need a Prometheus:
 
 ```sh
 # make prometheus
-docker run -it --rm -p 9090:9090 --name prometheus prom/prometheus:v2.14.0
+docker run -it --rm \
+  --name prometheus \
+  --hostname prometheus \
+  --network 1212 \
+  -p 9090:9090 \
+  prom/prometheus:v2.14.0
 ```
 
 By default, what targets is Prometheus configured to scrape? http://localhost:9090/targets
@@ -67,14 +113,40 @@ vi /etc/prometheus/prometheus.yml
 
 #  - job_name: 'rabbitmq'
 #    static_configs:
-#    - targets: ['tgir-001-rabbitmq:15692']
+#    - targets: ['getstarted:15692']
 
 pkill -HUP prometheus
 ```
 
-Let's verify that Prometheus configuration has been applied correctly: http://localhost:9090/config
+Was the Prometheus configuration applied correctly? http://localhost:9090/config
 
 Is the new RabbitMQ target being scraped correctly? http://localhost:9090/targets
+
+Can we see some RabbitMQ metrics in Prometheus? http://localhost:9090/new/graph
+
+* `rabbitmq_identity_info`
+* `rabbitmq_build_info`
+
+### 3/3. Configure Grafana to visualise RabbitMQ metrics from Prometheus
+
+We first need a Grafana:
+
+```sh
+# make grafana
+/usr/local/bin/docker run -it --rm \
+  --name grafana \
+  --hostname grafana \
+  --network 1212 \
+  -p 3000:3000 \
+  grafana/grafana:6.4.5
+```
+
+Secondly, we need to configure Prometheus datasource in Grafana: http://localhost:3000
+
+Lastly, let's import a Grafana dashboard: http://localhost:3000/dashboards + https://grafana.com/orgs/rabbitmq
+
+
+Now that we understand the mechanics of how the different pieces fit together, let us shift focus on what this dashboard is actually trying to show us, and that we are not seeing here.
 
 ## Developers: see RabbitMQ anti-patterns
 

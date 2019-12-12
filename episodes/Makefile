@@ -56,7 +56,7 @@ endif
 
 .PHONY: help
 help:
-	@awk -F": |##" '/^[^\.][a-zA-Z\._\-]+:+.+##.+$$/ { printf "\033[36m%-24s\033[0m %s\n", $$1, $$3 }' $(MAKEFILE_LIST) \
+	@awk -F": |##" '/^[^\.][a-zA-Z\._\-]+:+.+##.+$$/ { printf "\033[36m%-28s\033[0m %s\n", $$1, $$3 }' $(MAKEFILE_LIST) \
 	| sort
 
 define MAKE_TARGETS
@@ -66,7 +66,7 @@ define BASH_AUTOCOMPLETE
   complete -W \"$$($(MAKE_TARGETS) | sort | uniq)\" make gmake m
 endef
 .PHONY: bash_autocomplete
-bash_autocomplete: ## bac | Configure bash shell autocomplete - eval "$(make bash_autocomplete)"
+bash_autocomplete:
 	echo "$(BASH_AUTOCOMPLETE)"
 .PHONY: bac
 bac: bash_autocomplete
@@ -78,7 +78,7 @@ ifneq ($(GITHUB_PERSONAL_ACCESS_TOKEN),)
 GRIP_PASS := --pass $(GITHUB_PERSONAL_ACCESS_TOKEN)
 endif
 .PHONY: preview_readme
-preview_readme: $(DOCKER) ## pre | Preview README & live reload on edit - http://docker.localhost:5000
+preview_readme: $(DOCKER)
 	$(DOCKER) run --interactive --tty --rm \
 	  --volume $(CURDIR):/data \
 	  --volume $(HOME)/.grip:/.grip \
@@ -94,7 +94,7 @@ pre: preview_readme
 GITHUB_WIDTH = scale='min(866,iw):-1',
 GIF_SCALE =
 .PHONY: gif
-gif: $(FFMPEG) ## gif | Convert MP4s to GIFs
+gif: $(FFMPEG)
 ifndef F
 	$(error F variable must reference a valid mp4 file path)
 endif
