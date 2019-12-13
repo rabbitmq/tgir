@@ -1,9 +1,9 @@
-# Episode 001: Understand RabbitMQ - New observability features in 3.8
+# [Episode 001: Understand RabbitMQ: New metrics system](https://content.pivotal.io/webinars/dec-12-understand-rabbitmq-for-developers-and-operators-webinar?utm_campaign=rabbitmq-devops-erlang_q419&utm_source=github&utm_medium=social)
 
-- Hosted by @gerhard, Amy Welch & Dormain Drewitz
-- Recorded on 2019-12-12
+<a href="https://content.pivotal.io/webinars/dec-12-understand-rabbitmq-for-developers-and-operators-webinar?utm_campaign=rabbitmq-devops-erlang_q419&utm_source=github&utm_medium=social" target="_blank"><img src="video.png" border="50" /></a>
 
-<a href="#" target="_blank"><img src="https://user-images.githubusercontent.com/3342/70550192-4b7ba100-1b6d-11ea-99bc-7f7564504bcb.png" border="50" /></a>
+* Hosted by [@gerhardlazu](https://twitter.com/gerhardlazu) & [@DormainDrewitz](https://twitter.com/DormainDrewitz)
+* Recorded on: 2019-12-12
 
 ## Introduction
 
@@ -12,8 +12,6 @@ Hi everybody, I am [Gerhard Lazu](https://gerhard.io), [a RabbitMQ Engineer](htt
 In the next hour, we will see what happens within RabbitMQ by using the new metrics system that we have shipped in RabbitMQ 3.8.
 We are currently on RabbitMQ 3.8.2, meaning that the 3.8 series was out for about 2 months now, since early October.
 Yes, that's right, we usually ship 1 patch release per month, across all supported RabbitMQ minors, currently 3.7 & 3.8.
-
-...
 
 The new metrics system in 3.8 is an evolution of what many of you know & use in today's RabbitMQ Management
 
@@ -24,15 +22,11 @@ and understand why that is, as well as give you a few tips about what to do.
 Because this webinar is a series of demos, please ask questions as they come up.
 I will stop at regular intervals and answer as many of your questions as possible.
 
-...
-
 OK, so we will start by setting up the new metrics system in RabbitMQ 3.8 from scratch.
 This includes integrating with Prometheus & Grafana.
 Even though this is something that you may not need to do if you are using RabbitMQ as a service,
-for example RabbitMQ for Kubernetes, and I belive RabbitMQ for PCF as well,
+for example [RabbitMQ for Kubernetes](https://content.pivotal.io/blog/introducing-rabbitmq-for-kubernetes), and I belive [RabbitMQ for PCF](https://docs.pivotal.io/rabbitmq-cf) as well,
 it's important to understand how the various pieces fit together.
-
-...
 
 After we have covered the basics,
 we will continue by learning about the new Grafana dashboards that our team maintains:
@@ -42,15 +36,9 @@ we will continue by learning about the new Grafana dashboards that our team main
 
 As we do this, I want you to remember that the end-goal is to understand RabbitMQ.
 
-...
-
 To finish off, we will see how to share the state of RabbitMQ deployments when asking for help.
 In order for our team to help you, and improve RabbitMQ, we need to understand what is going on.
 My hope is that going forward, we will have more than screenshots and logs to go by.
-
-...
-
-OK, so...
 
 ## How do we get started with the new metrics in RabbitMQ 3.8?
 
@@ -158,10 +146,19 @@ Now that we understand the mechanics of how the different pieces fit together,
 let us shift focus on what this dashboard is actually trying to show us,
 and that we are not seeing here.
 
-## Developers: see RabbitMQ anti-patterns & imbalances
+## Operators: see RabbitMQ anti-patterns & imbalances
+
+* [RabbitMQ Overview - Reasoning about the metrics shown](https://www.rabbitmq.com/prometheus.html#graphs)
 
 ## Developers: understand Quorum Queues
 
+* [RabbitMQ Quorum Queues - Raft](https://grafana.com/grafana/dashboards/11340)
+
 ## Experts: unlock Erlang insights
 
-## All: share your context - ran out of time
+* [Erlang Memory Allocators](https://grafana.com/grafana/dashboards/11350)
+* [Erlang Distribution](https://grafana.com/grafana/dashboards/11352)
+
+## All: share your context
+
+[How to share a snapshot](https://gerhard.io/slides/observe-understand-rabbitmq/#/20) - ran out of time.
