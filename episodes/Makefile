@@ -15,7 +15,7 @@ ifeq ($(PLATFORM),Darwin)
 DOCKER ?= /usr/local/bin/docker
 COMPOSE ?= $(DOCKER)-compose
 $(DOCKER) $(COMPOSE):
-	@brew cask install docker
+	brew cask install docker
 else
 DOCKER ?= /usr/bin/docker
 $(DOCKER):
@@ -28,7 +28,7 @@ endif
 ifeq ($(PLATFORM),Darwin)
 FFMPEG := /usr/local/bin/ffmpeg
 $(FFMPEG):
-	@brew install ffmpeg
+	brew install ffmpeg
 else
 FFMPEG ?= /usr/bin/ffmpeg
 $(FFMPEG):
@@ -56,7 +56,7 @@ endif
 
 .PHONY: help
 help:
-	@awk -F": |##" '/^[^\.][a-zA-Z\._\-]+:+.+##.+$$/ { printf "\033[36m%-28s\033[0m %s\n", $$1, $$3 }' $(MAKEFILE_LIST) \
+	@awk -F": |##" '/^[^\.][a-zA-Z\._\-]+:+.+##.+$$/ { printf "\033[36m%-2200s\033[0m %s\n", $$1, $$3 }' $(MAKEFILE_LIST) \
 	| sort
 
 define MAKE_TARGETS
@@ -65,11 +65,11 @@ endef
 define BASH_AUTOCOMPLETE
   complete -W \"$$($(MAKE_TARGETS) | sort | uniq)\" make gmake m
 endef
-.PHONY: bash_autocomplete
-bash_autocomplete:
-	echo "$(BASH_AUTOCOMPLETE)"
+.PHONY: bash-autocomplete
+bash-autocomplete: ## Configure bash shell autocompletion - source .env
+	@echo "$(BASH_AUTOCOMPLETE)"
 .PHONY: bac
-bac: bash_autocomplete
+bac: bash-autocomplete
 
 ifneq ($(GITHUB_USER),)
 GRIP_USER := --user $(GITHUB_USER)
@@ -77,8 +77,8 @@ endif
 ifneq ($(GITHUB_PERSONAL_ACCESS_TOKEN),)
 GRIP_PASS := --pass $(GITHUB_PERSONAL_ACCESS_TOKEN)
 endif
-.PHONY: preview_readme
-preview_readme: $(DOCKER)
+.PHONY: preview-readme
+preview-readme: $(DOCKER) ## Preview README.md, as it will appear on github.com
 	$(DOCKER) run --interactive --tty --rm \
 	  --volume $(CURDIR):/data \
 	  --volume $(HOME)/.grip:/.grip \
@@ -86,7 +86,7 @@ preview_readme: $(DOCKER)
 	  --name readme \
 	  mbentley/grip --context=. 0.0.0.0:5000 $(GRIP_USER) $(GRIP_PASS)
 .PHONY: pre
-pre: preview_readme
+pre: preview-readme
 
 # https://www.bugcodemaster.com/article/convert-video-animated-gif-using-ffmpeg
 # https://trac.ffmpeg.org/wiki/Scaling
@@ -95,7 +95,7 @@ pre: preview_readme
 GITHUB_WIDTH = scale='min(866,iw):-1',
 GIF_SCALE =
 .PHONY: gif
-gif: $(FFMPEG)
+gif: $(FFMPEG) ## Convert mp4 to gif
 ifndef F
 	$(error F variable must reference a valid mp4 file path)
 endif
