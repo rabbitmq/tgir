@@ -1,7 +1,8 @@
 Official repository for TGIR! While it is inspired by [TGIK!](https://github.com/vmware-tanzu/tgik), there are a few notable differences:
 
-* We do not know if there will be a live video stream - there will definitley be video content!
-* While the plan is to share on a regular basis, we are starting with one-offs
+* We expect most episodes to be pre-recorded, like a TV show
+* The first season will have twelve episodes, one episode on the last Friday of every month
+* Each episode contains all the code so that you can follow along
 
 The [playlist index](playlist.md) contains a list of all content.
 

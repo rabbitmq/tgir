@@ -1,6 +1,6 @@
-include ../Makefile
+include ../../Makefile
 
-DOCKER_NETWORK := 1212
+DOCKER_NETWORK := s01e00
 
 # https://hub.docker.com/_/rabbitmq/tags
 RABBITMQ_DOCKER_IMAGE := rabbitmq:3.8.2-management

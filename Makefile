@@ -56,7 +56,7 @@ endif
 
 .PHONY: help
 help:
-	@awk -F": |##" '/^[^\.][a-zA-Z\._\-]+:+.+##.+$$/ { printf "\033[36m%-2200s\033[0m %s\n", $$1, $$3 }' $(MAKEFILE_LIST) \
+	@awk -F": |##" '/^[^\.][a-zA-Z\._\-]+:+.+##.+$$/ { printf "\033[36m%-29s\033[0m %s\n", $$1, $$3 }' $(MAKEFILE_LIST) \
 	| sort
 
 define MAKE_TARGETS
@@ -77,16 +77,14 @@ endif
 ifneq ($(GITHUB_PERSONAL_ACCESS_TOKEN),)
 GRIP_PASS := --pass $(GITHUB_PERSONAL_ACCESS_TOKEN)
 endif
-.PHONY: preview-readme
-preview-readme: $(DOCKER) ## Preview README.md, as it will appear on github.com
+.PHONY: readme
+readme: $(DOCKER) ## Preview README.md, as it will appear on github.com
 	$(DOCKER) run --interactive --tty --rm \
 	  --volume $(CURDIR):/data \
 	  --volume $(HOME)/.grip:/.grip \
 	  --expose 5000 --publish 5000:5000 \
 	  --name readme \
 	  mbentley/grip --context=. 0.0.0.0:5000 $(GRIP_USER) $(GRIP_PASS)
-.PHONY: pre
-pre: preview-readme
 
 # https://www.bugcodemaster.com/article/convert-video-animated-gif-using-ffmpeg
 # https://trac.ffmpeg.org/wiki/Scaling
@@ -103,3 +101,6 @@ endif
 	  -hide_banner \
 	  -vf "$(GIF_SCALE)fps=1" \
 	  $(subst .mp4,.gif,$(F))
+
+.env:
+	ln -sf ../../.env .env
