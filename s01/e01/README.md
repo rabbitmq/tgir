@@ -30,7 +30,7 @@ Bonus points if I can see how to do it right, which would go really well alongsi
 
 ## Three nodes, production cluster, best practice
 
-* 12k connections & channels - 4k connections per node
+* 24k connections & channels - 8k connections per node
 * 12k queues with 10k messages each - 4k queues per node, 400k messages per node
 * each message is 1KB in size
 * minimal service degradation
