@@ -33,7 +33,7 @@ _rabbitmq-server: $(DOCKER) network
 	$(DOCKER) run --interactive --tty \
 	  --env RABBITMQ_ERLANG_COOKIE=$(DOCKER_NETWORK) \
 	  --hostname $(RABBITMQ_HOSTNAME) \
-	  --memory 8G \
+	  --memory 12G \
 	  --name $(RABBITMQ_HOSTNAME) \
 	  --network $(DOCKER_NETWORK) \
 	  --publish :15672 \
@@ -89,6 +89,14 @@ _rabbitmq-clients: $(DOCKER) network
 3-nodes-production-rmq1-backlog: RABBITMQ_HOSTNAME = $(DOCKER_NETWORK)-rmq1
 3-nodes-production-rmq1-backlog: _message-backlog ## Create message backlog on RabbitMQ node 1/3
 
+.PHONY: 3-nodes-production-rmq2-backlog
+3-nodes-production-rmq2-backlog: RABBITMQ_HOSTNAME = $(DOCKER_NETWORK)-rmq2
+3-nodes-production-rmq2-backlog: _message-backlog ## Create message backlog on RabbitMQ node 2/3
+
+.PHONY: 3-nodes-production-rmq3-backlog
+3-nodes-production-rmq3-backlog: RABBITMQ_HOSTNAME = $(DOCKER_NETWORK)-rmq3
+3-nodes-production-rmq3-backlog: _message-backlog ## Create message backlog on RabbitMQ node 3/3
+
 .PHONY: _message-backlog
 _message-backlog: $(DOCKER) network
 	$(DOCKER) run --rm --interactive --tty \
@@ -97,7 +105,7 @@ _message-backlog: $(DOCKER) network
 	  --network $(DOCKER_NETWORK) \
 	  $(DOCKER_RABBITMQ_PERFTEST_IMAGE) \
 	  --auto-delete false \
-	  --confirm 2 \
+	  --confirm 3 \
 	  --confirm-timeout 60 \
 	  --consumers 0 \
 	  --flag persistent \
@@ -106,7 +114,7 @@ _message-backlog: $(DOCKER) network
 	  --queue-pattern '$(RABBITMQ_HOSTNAME)-q%d' \
 	  --queue-pattern-from 1 \
 	  --queue-pattern-to $(NUMBER_OF_QUEUES_PER_NODE) \
-	  --rate 2 \
+	  --rate 3 \
 	  --servers-startup-timeout 60 \
 	  --size $(MESSAGE_SIZE) \
 	  --uri "amqp://guest:guest@$(RABBITMQ_HOSTNAME):5672/%2f"
