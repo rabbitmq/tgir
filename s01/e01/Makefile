@@ -7,7 +7,9 @@ DOCKER_RABBITMQ_IMAGE := rabbitmq:3.7.23-management
 # https://hub.docker.com/r/pivotalrabbitmq/perf-test/tags
 DOCKER_RABBITMQ_PERFTEST_IMAGE := pivotalrabbitmq/perf-test:2.10.0-ubuntu
 
-NUMBER_OF_QUEUES_PER_NODE := 2000
+NUMBER_OF_QUEUES_PER_NODE := 1000
+NUMBER_OF_MESSAGES_PER_QUEUE := 1000
+MESSAGE_SIZE := 1000
 
 .PHONY: network
 network: $(DOCKER)
@@ -75,13 +77,12 @@ _rabbitmq-clients: $(DOCKER) network
 	  --publishing-interval 60 \
 	  --producer-random-start-delay 120 \
 	  --producer-scheduler-threads 10 \
-	  --queue-args 'x-max-length=1000' \
+	  --queue-args 'x-max-length=$(NUMBER_OF_MESSAGES_PER_QUEUE)' \
 	  --queue-pattern '$(RABBITMQ_HOSTNAME)-q%d' \
 	  --queue-pattern-from 1 \
 	  --queue-pattern-to $(NUMBER_OF_QUEUES_PER_NODE) \
 	  --servers-startup-timeout 60 \
-	  --size 1000 \
-	  --type 'fanout' \
+	  --size $(MESSAGE_SIZE) \
 	  --uri "amqp://guest:guest@$(RABBITMQ_HOSTNAME):5672/%2f"
 
 .PHONY: 3-nodes-production-rmq1-backlog
@@ -96,17 +97,16 @@ _message-backlog: $(DOCKER) network
 	  --network $(DOCKER_NETWORK) \
 	  $(DOCKER_RABBITMQ_PERFTEST_IMAGE) \
 	  --auto-delete false \
-	  --confirm 100 \
-	  --confirm-timeout 10 \
+	  --confirm 2 \
+	  --confirm-timeout 60 \
 	  --consumers 0 \
 	  --flag persistent \
-	  --pmessages 1000 \
-	  --producers 1 \
-	  --queue-args 'x-max-length=1000' \
+	  --producers $(NUMBER_OF_QUEUES_PER_NODE) \
+	  --queue-args 'x-max-length=$(NUMBER_OF_MESSAGES_PER_QUEUE)' \
 	  --queue-pattern '$(RABBITMQ_HOSTNAME)-q%d' \
 	  --queue-pattern-from 1 \
 	  --queue-pattern-to $(NUMBER_OF_QUEUES_PER_NODE) \
+	  --rate 2 \
 	  --servers-startup-timeout 60 \
-	  --size 1000 \
-	  --type 'fanout' \
+	  --size $(MESSAGE_SIZE) \
 	  --uri "amqp://guest:guest@$(RABBITMQ_HOSTNAME):5672/%2f"
