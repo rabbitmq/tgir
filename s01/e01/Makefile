@@ -60,6 +60,7 @@ _rabbitmq-clients: $(DOCKER) network
 	  --name $(RABBITMQ_HOSTNAME)-clients \
 	  --network $(DOCKER_NETWORK) \
 	  $(DOCKER_RABBITMQ_PERFTEST_IMAGE) \
+	  --auto-delete false \
 	  --confirm 1 \
 	  --confirm-timeout 10 \
 	  --consumer-latency 10000 \
@@ -70,11 +71,11 @@ _rabbitmq-clients: $(DOCKER) network
 	  --metrics-prometheus \
 	  --nio-threads 10 \
 	  --nio-thread-pool 20 \
-	  --predeclared \
-	  --producers $(NUMBER_OF_QUEUES_PER_NODE) \
+	  --producers 0 \
 	  --publishing-interval 60 \
 	  --producer-random-start-delay 120 \
 	  --producer-scheduler-threads 10 \
+	  --queue-args 'x-max-length=1000' \
 	  --queue-pattern '$(RABBITMQ_HOSTNAME)-q%d' \
 	  --queue-pattern-from 1 \
 	  --queue-pattern-to $(NUMBER_OF_QUEUES_PER_NODE) \
@@ -88,19 +89,20 @@ _rabbitmq-clients: $(DOCKER) network
 3-nodes-production-rmq1-backlog: _message-backlog ## Create message backlog on RabbitMQ node 1/3
 
 .PHONY: _message-backlog
-_message-backlog: $(DOCKER) network _declare-queues
+_message-backlog: $(DOCKER) network
 	$(DOCKER) run --rm --interactive --tty \
 	  --hostname $(RABBITMQ_HOSTNAME)-backlog \
 	  --name $(RABBITMQ_HOSTNAME)-backlog \
 	  --network $(DOCKER_NETWORK) \
 	  $(DOCKER_RABBITMQ_PERFTEST_IMAGE) \
+	  --auto-delete false \
 	  --confirm 100 \
 	  --confirm-timeout 10 \
 	  --consumers 0 \
 	  --flag persistent \
 	  --pmessages 1000 \
-	  --predeclared \
 	  --producers 1 \
+	  --queue-args 'x-max-length=1000' \
 	  --queue-pattern '$(RABBITMQ_HOSTNAME)-q%d' \
 	  --queue-pattern-from 1 \
 	  --queue-pattern-to $(NUMBER_OF_QUEUES_PER_NODE) \
@@ -108,21 +110,3 @@ _message-backlog: $(DOCKER) network _declare-queues
 	  --size 1000 \
 	  --type 'fanout' \
 	  --uri "amqp://guest:guest@$(RABBITMQ_HOSTNAME):5672/%2f"
-
-.PHONY: _declare-queues
-_declare-queues: $(DOCKER) network
-	$(DOCKER) run --rm --interactive --tty \
-	  --name $(RABBITMQ_HOSTNAME)-declare \
-	  --network $(DOCKER_NETWORK) \
-	  $(DOCKER_RABBITMQ_PERFTEST_IMAGE) \
-	  --auto-delete false \
-	  --consumers 0 \
-	  --producers 0 \
-	  --queue-args 'x-max-length=1000' \
-	  --queue-pattern '$(RABBITMQ_HOSTNAME)-q%d' \
-	  --queue-pattern-from 1 \
-	  --queue-pattern-to $(NUMBER_OF_QUEUES_PER_NODE) \
-	  --time 1 \
-	  --type 'fanout' \
-	  --uri "amqp://guest:guest@$(RABBITMQ_HOSTNAME):5672/%2f"
-
