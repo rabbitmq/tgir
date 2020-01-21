@@ -109,6 +109,7 @@ _message-backlog: $(DOCKER) network
 	  --confirm-timeout 60 \
 	  --consumers 0 \
 	  --flag persistent \
+	  --pmessages $(NUMBER_OF_MESSAGES_PER_QUEUE) \
 	  --producers $(NUMBER_OF_QUEUES_PER_NODE) \
 	  --queue-args 'x-max-length=$(NUMBER_OF_MESSAGES_PER_QUEUE)' \
 	  --queue-pattern '$(RABBITMQ_HOSTNAME)-q%d' \
