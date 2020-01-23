@@ -7,7 +7,7 @@ DOCKER_RABBITMQ_37x_IMAGE = rabbitmq:3.7.23-management
 DOCKER_RABBITMQ_38x_IMAGE = rabbitmq:3.8.2-management
 DOCKER_RABBITMQ_IMAGE = $(DOCKER_RABBITMQ_37x_IMAGE)
 # https://hub.docker.com/r/pivotalrabbitmq/perf-test/tags
-DOCKER_RABBITMQ_PERFTEST_IMAGE := pivotalrabbitmq/perf-test:2.10.0-ubuntu
+DOCKER_RABBITMQ_PERFTEST_IMAGE := pivotalrabbitmq/perf-test:dev-2020.01.22
 
 NUMBER_OF_QUEUES_PER_NODE := 1000
 NUMBER_OF_MESSAGES_PER_QUEUE := 1000
