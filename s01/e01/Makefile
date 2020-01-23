@@ -30,9 +30,17 @@ rmq1-server-38x: rmq1-server ## Start RabbitMQ node 1/3 as 3.8.x
 rmq2-server: RABBITMQ_HOSTNAME = $(DOCKER_NETWORK)-rmq2
 rmq2-server: _rabbitmq-server ## Start RabbitMQ node 2/3
 
+.PHONY: rmq2-server-38x
+rmq2-server-38x: DOCKER_RABBITMQ_IMAGE = $(DOCKER_RABBITMQ_38x_IMAGE)
+rmq2-server-38x: rmq2-server ## Start RabbitMQ node 2/3 as 3.8.x
+
 .PHONY: rmq3-server
 rmq3-server: RABBITMQ_HOSTNAME = $(DOCKER_NETWORK)-rmq3
 rmq3-server: _rabbitmq-server ## Start RabbitMQ node 3/3
+
+.PHONY: rmq3-server-38x
+rmq3-server-38x: DOCKER_RABBITMQ_IMAGE = $(DOCKER_RABBITMQ_38x_IMAGE)
+rmq3-server-38x: rmq3-server ## Start RabbitMQ node 3/3 as 3.8.x
 
 .PHONY: _rabbitmq-server
 _rabbitmq-server: $(DOCKER) network
