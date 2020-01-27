@@ -1,155 +1,187 @@
 include ../../Makefile
 
-DOCKER_NETWORK := tgir-s01e01
+NAMESPACE := tgir-s01e01
 
 # https://hub.docker.com/_/rabbitmq?tab=tags
 DOCKER_RABBITMQ_37x_IMAGE = rabbitmq:3.7.23-management
 DOCKER_RABBITMQ_38x_IMAGE = rabbitmq:3.8.2-management
-DOCKER_RABBITMQ_IMAGE = $(DOCKER_RABBITMQ_37x_IMAGE)
 # https://hub.docker.com/r/pivotalrabbitmq/perf-test/tags
 DOCKER_RABBITMQ_PERFTEST_IMAGE := pivotalrabbitmq/perf-test:dev-2020.01.22
 
-NUMBER_OF_QUEUES_PER_NODE := 1000
+
+NUMBER_OF_QUEUES_PER_NODE := 4000
 NUMBER_OF_MESSAGES_PER_QUEUE := 1000
 MESSAGE_SIZE := 1000
 
-.PHONY: network
-network: $(DOCKER)
-	@$(DOCKER) network inspect $(DOCKER_NETWORK) 1>/dev/null \
-	|| $(DOCKER) network create $(DOCKER_NETWORK)
+instances: ## List all instances
+	gcloud compute instances list --filter='name ~ $(NAMESPACE)'
 
-.PHONY: rmq1-server
-rmq1-server: RABBITMQ_HOSTNAME = $(DOCKER_NETWORK)-rmq1
-rmq1-server: _rabbitmq-server ## Start RabbitMQ node 1/3
+rmq1-server: INSTANCE = rmq1-server
+rmq1-server: _rmq-server ## Create RabbitMQ node
 
-.PHONY: rmq1-server-38x
-rmq1-server-38x: DOCKER_RABBITMQ_IMAGE = $(DOCKER_RABBITMQ_38x_IMAGE)
-rmq1-server-38x: rmq1-server ## Start RabbitMQ node 1/3 as 3.8.x
+rmq1-server-delete: INSTANCE = rmq1-server
+rmq1-server-delete: _delete ## Delete RabbitMQ node
 
-.PHONY: rmq2-server
-rmq2-server: RABBITMQ_HOSTNAME = $(DOCKER_NETWORK)-rmq2
-rmq2-server: _rabbitmq-server ## Start RabbitMQ node 2/3
+rmq1-server-37x: INSTANCE = rmq1-server
+rmq1-server-37x: _rmq-server-37x ## Ensure RabbitMQ node is running RabbitMQ v3.7.x
 
-.PHONY: rmq2-server-38x
-rmq2-server-38x: DOCKER_RABBITMQ_IMAGE = $(DOCKER_RABBITMQ_38x_IMAGE)
-rmq2-server-38x: rmq2-server ## Start RabbitMQ node 2/3 as 3.8.x
+rmq1-server-38x: INSTANCE = rmq1-server
+rmq1-server-38x: _rmq-server-38x ## Ensure RabbitMQ node is running RabbitMQ v3.8.x
 
-.PHONY: rmq3-server
-rmq3-server: RABBITMQ_HOSTNAME = $(DOCKER_NETWORK)-rmq3
-rmq3-server: _rabbitmq-server ## Start RabbitMQ node 3/3
+rmq1-server-ssh: INSTANCE = rmq1-server
+rmq1-server-ssh: _ssh ## SSH to RabbitMQ node
 
-.PHONY: rmq3-server-38x
-rmq3-server-38x: DOCKER_RABBITMQ_IMAGE = $(DOCKER_RABBITMQ_38x_IMAGE)
-rmq3-server-38x: rmq3-server ## Start RabbitMQ node 3/3 as 3.8.x
+rmq1-server-bash: INSTANCE = rmq1-server
+rmq1-server-bash: _bash ## Open a shell session on RabbitMQ node
 
-.PHONY: _rabbitmq-server
-_rabbitmq-server: $(DOCKER) network
-	$(DOCKER) run --interactive --tty \
-	  --env RABBITMQ_ERLANG_COOKIE=$(DOCKER_NETWORK) \
-	  --hostname $(RABBITMQ_HOSTNAME) \
-	  --memory 12G \
-	  --name $(RABBITMQ_HOSTNAME) \
-	  --network $(DOCKER_NETWORK) \
-	  --publish 15672:15672 \
-	  --publish 5672:5672 \
-	  --rm \
-	  --volume $(CURDIR)/3-nodes-production/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro \
-	  --volume $(CURDIR)/3-nodes-production/rabbitmq-definitions.json:/etc/rabbitmq/rabbitmq-definitions.json:ro \
-	  --volume $(RABBITMQ_HOSTNAME):/var/lib/rabbitmq:rw \
-	  $(DOCKER_RABBITMQ_IMAGE)
+rmq1-server-ctop: INSTANCE = rmq1-server
+rmq1-server-ctop: _ctop ## Run ctop on VM that runs RabbitMQ node
 
-.PHONY: rmq1-bash
-rmq1-bash: RABBITMQ_HOSTNAME = $(DOCKER_NETWORK)-rmq1
-rmq1-bash: _rabbitmq-bash ## Open bash shell on RabbitMQ node 1/3
+rmq1-server-htop: INSTANCE = rmq1-server
+rmq1-server-htop: _htop ## Run htop on VM that runs RabbitMQ node
 
-.PHONY: rmq2-bash
-rmq2-bash: RABBITMQ_HOSTNAME = $(DOCKER_NETWORK)-rmq2
-rmq2-bash: _rabbitmq-bash ## Open bash shell on RabbitMQ node 2/3
+rmq1-messages-start: INSTANCE = rmq1-messages
+rmq1-messages-start: _rmq-messages ## Simulate RabbitMQ message backlog
 
-.PHONY: rmq3-bash
-rmq3-bash: RABBITMQ_HOSTNAME = $(DOCKER_NETWORK)-rmq3
-rmq3-bash: _rabbitmq-bash ## Open bash shell on RabbitMQ node 3/3
+rmq1-messages-stop: INSTANCE = rmq1-messages
+rmq1-messages-stop: _delete ## Stop RabbitMQ message backlog
 
-.PHONY: _rabbitmq-bash
-_rabbitmq-bash: $(DOCKER)
-	$(DOCKER) exec --interactive --tty \
-	  $(RABBITMQ_HOSTNAME) \
-	  bash
+rmq1-clients-start: INSTANCE = rmq1-clients
+rmq1-clients-start: _rmq-clients ## Simulate RabbitMQ production workload
 
-.PHONY: rmq1-clients
-rmq1-clients: RABBITMQ_HOSTNAME = $(DOCKER_NETWORK)-rmq1
-rmq1-clients: _rabbitmq-clients ## Start clients for RabbitMQ node 1/3
+rmq1-clients-stop: INSTANCE = rmq1-clients
+rmq1-clients-stop: _delete ## Stop RabbitMQ production workload
 
-.PHONY: rmq2-clients
-rmq2-clients: RABBITMQ_HOSTNAME = $(DOCKER_NETWORK)-rmq2
-rmq2-clients: _rabbitmq-clients ## Start clients for RabbitMQ node 2/3
+logs-viewer:
+	open "https://console.cloud.google.com/logs/viewer?project=cf-rabbitmq-core&minLogLevel=0&expandAll=false&customFacets&limitCustomFacetWidth=true&interval=PT1H&advancedFilter=resource.type%3Dgce_instance%0AlogName%3Dprojects%2Fcf-rabbitmq-core%2Flogs%2Fcos_containers"
 
-.PHONY: rmq3-clients
-rmq3-clients: RABBITMQ_HOSTNAME = $(DOCKER_NETWORK)-rmq3
-rmq3-clients: _rabbitmq-clients ## Start clients for RabbitMQ node 3/3
+define GCP_COS_CONTAINER_DEFAULTS
+--public-dns \
+--boot-disk-type=pd-ssd \
+--labels=namespace=$(NAMESPACE) \
+--container-stdin \
+--container-tty
+endef
 
-.PHONY: _rabbitmq-clients
-_rabbitmq-clients: $(DOCKER)
-	$(DOCKER) run --rm --interactive --tty \
-	  --cpus 1 \
-	  --hostname $(RABBITMQ_HOSTNAME)-clients \
-	  --memory 2G \
-	  --name $(RABBITMQ_HOSTNAME)-clients \
-	  --network $(DOCKER_NETWORK) \
-	  $(DOCKER_RABBITMQ_PERFTEST_IMAGE) \
-	  --auto-delete false \
-	  --confirm 1 \
-	  --confirm-timeout 10 \
-	  --consumer-latency 10000 \
-	  --consumers $(NUMBER_OF_QUEUES_PER_NODE) \
-	  --consumers-thread-pools 10 \
-	  --flag persistent \
-	  --heartbeat-sender-threads 10 \
-	  --metrics-prometheus \
-	  --nio-threads 10 \
-	  --nio-thread-pool 20 \
-	  --producers $(NUMBER_OF_QUEUES_PER_NODE) \
-	  --publishing-interval 60 \
-	  --producer-random-start-delay 120 \
-	  --producer-scheduler-threads 10 \
-	  --qos 10 \
-	  --queue-args 'x-max-length=$(NUMBER_OF_MESSAGES_PER_QUEUE)' \
-	  --queue-pattern '$(RABBITMQ_HOSTNAME)-q%d' \
-	  --queue-pattern-from 1 \
-	  --queue-pattern-to $(NUMBER_OF_QUEUES_PER_NODE) \
-	  --servers-startup-timeout 60 \
-	  --size $(MESSAGE_SIZE) \
-	  --uri "amqp://guest:guest@$(RABBITMQ_HOSTNAME):5672/%2f"
+# https://cloud.google.com/compute/docs/containers/deploying-containers
+_rmq-server:
+	gcloud compute instances create-with-container $(NAMESPACE)-$(INSTANCE) \
+	  $(GCP_COS_CONTAINER_DEFAULTS) \
+	  --machine-type=n1-standard-8 \
+	  --create-disk=name=$(INSTANCE)-persistent,size=200GB,type=pd-ssd,auto-delete=yes \
+	  --container-mount-disk=name=$(INSTANCE)-persistent,mount-path=/var/lib/rabbitmq \
+	  --container-image=$(DOCKER_RABBITMQ_37x_IMAGE)
 
-.PHONY: rmq1-messages
-rmq1-messages: RABBITMQ_HOSTNAME = $(DOCKER_NETWORK)-rmq1
-rmq1-messages: _message-backlog ## Create message backlog on RabbitMQ node 1/3
+# https://api.cloudflare.com/#dns-records-for-a-zone-create-dns-record
 
-.PHONY: rmq2-messages
-rmq2-messages: RABBITMQ_HOSTNAME = $(DOCKER_NETWORK)-rmq2
-rmq2-messages: _message-backlog ## Create message backlog on RabbitMQ node 2/3
+_rmq-server-37x: _rmq_stop_app
+	gcloud compute instances update-container $(NAMESPACE)-$(INSTANCE) \
+	  --container-image=$(DOCKER_RABBITMQ_37x_IMAGE)
 
-.PHONY: rmq3-messages
-rmq3-messages: RABBITMQ_HOSTNAME = $(DOCKER_NETWORK)-rmq3
-rmq3-messages: _message-backlog ## Create message backlog on RabbitMQ node 3/3
 
-.PHONY: _message-backlog
-_message-backlog: $(DOCKER) network
-	$(DOCKER) run --rm --interactive --tty \
-	  --hostname $(RABBITMQ_HOSTNAME)-backlog \
-	  --name $(RABBITMQ_HOSTNAME)-backlog \
-	  --network $(DOCKER_NETWORK) \
-	  $(DOCKER_RABBITMQ_PERFTEST_IMAGE) \
-	  --auto-delete false \
-	  --consumers 0 \
-	  --flag persistent \
-	  --pmessages $(NUMBER_OF_MESSAGES_PER_QUEUE) \
-	  --producers $(NUMBER_OF_QUEUES_PER_NODE) \
-	  --queue-args 'x-max-length=$(NUMBER_OF_MESSAGES_PER_QUEUE)' \
-	  --queue-pattern '$(RABBITMQ_HOSTNAME)-q%d' \
-	  --queue-pattern-from 1 \
-	  --queue-pattern-to $(NUMBER_OF_QUEUES_PER_NODE) \
-	  --rate 5 \
-	  --servers-startup-timeout 60 \
-	  --size $(MESSAGE_SIZE) \
-	  --uri "amqp://guest:guest@$(RABBITMQ_HOSTNAME):5672/%2f"
+_rmq-server-38x: _rmq_stop_app
+	gcloud compute instances update-container $(NAMESPACE)-$(INSTANCE) \
+	  --container-image=$(DOCKER_RABBITMQ_38x_IMAGE)
+
+_ssh:
+	gcloud compute ssh $(NAMESPACE)-$(INSTANCE)
+
+_bash:
+	gcloud compute ssh $(NAMESPACE)-$(INSTANCE) -- \
+	  "docker exec -it \$$(docker container ls | awk '/rabbitmq/ { print \$$1 }') bash"
+
+_rmq_stop_app:
+	gcloud compute ssh $(NAMESPACE)-$(INSTANCE) -- \
+	  "docker exec \$$(docker container ls | awk '/rabbitmq/ { print \$$1 }') rabbitmqctl stop_app"
+
+_delete:
+	gcloud compute instances delete $(NAMESPACE)-$(INSTANCE)
+
+# https://github.com/bcicen/ctop
+define CTOP_CONTAINER
+docker run --rm --interactive --tty \
+  --cpus 0.5 --memory 128M \
+  --volume /var/run/docker.sock:/var/run/docker.sock \
+  --name ctop \
+  quay.io/vektorlab/ctop
+endef
+_ctop:
+	gcloud compute ssh $(NAMESPACE)-$(INSTANCE) -- "$(CTOP_CONTAINER)"
+
+# https://github.com/hishamhm/htop
+define HTOP_CONTAINER
+docker run --rm --interactive --tty \
+  --cpus 0.5 --memory 128M \
+  --net="host" --pid="host" \
+  --name htop \
+  jess/htop
+endef
+_htop:
+	gcloud compute ssh $(NAMESPACE)-$(INSTANCE) -- "$(HTOP_CONTAINER)"
+
+define RABBITMQ_PERFTEST_DEFAULTS
+--container-image=pivotalrabbitmq/perf-test:dev-2020.01.22 \
+--container-arg="--auto-delete" \
+--container-arg="false" \
+--container-arg="--consumers" \
+--container-arg="$(NUMBER_OF_QUEUES_PER_NODE)" \
+--container-arg="--confirm" \
+--container-arg="1" \
+--container-arg="--confirm-timeout" \
+--container-arg="120" \
+--container-arg="--connection-recovery-interval" \
+--container-arg="30-120" \
+--container-arg="--flag" \
+--container-arg="persistent" \
+--container-arg="--heartbeat-sender-threads" \
+--container-arg="10" \
+--container-arg="--nio-threads" \
+--container-arg="10" \
+--container-arg="--nio-thread-pool" \
+--container-arg="20" \
+--container-arg="--producers" \
+--container-arg="$(NUMBER_OF_QUEUES_PER_NODE)" \
+--container-arg="--producer-random-start-delay" \
+--container-arg="60" \
+--container-arg="--producer-scheduler-threads" \
+--container-arg="10" \
+--container-arg="--qos" \
+--container-arg="5" \
+--container-arg="--queue-args" \
+--container-arg="x-max-length=$(NUMBER_OF_MESSAGES_PER_QUEUE)" \
+--container-arg="--queue-pattern" \
+--container-arg="q%d" \
+--container-arg="--queue-pattern-from" \
+--container-arg="1" \
+--container-arg="--queue-pattern-to" \
+--container-arg="$(NUMBER_OF_QUEUES_PER_NODE)" \
+--container-arg="--servers-startup-timeout" \
+--container-arg="60" \
+--container-arg="--size" \
+--container-arg="$(MESSAGE_SIZE)" \
+--container-arg="--uri" \
+--container-arg="amqp://guest:guest@tgir-s01e01-rmq1-server.c.cf-rabbitmq-core.internal:5672/%2f"
+endef
+
+_rmq-messages:
+	gcloud compute instances create-with-container $(NAMESPACE)-$(INSTANCE) \
+	  $(GCP_COS_CONTAINER_DEFAULTS) \
+	  --machine-type=n1-highcpu-4 \
+	  --container-arg="--consumers" \
+	  --container-arg="0" \
+	  --container-arg="--rate" \
+	  --container-arg="1" \
+	  $(RABBITMQ_PERFTEST_DEFAULTS)
+
+_rmq-clients:
+	gcloud compute instances create-with-container $(NAMESPACE)-$(INSTANCE) \
+	  $(GCP_COS_CONTAINER_DEFAULTS) \
+	  --machine-type=n1-highcpu-4 \
+	  --container-arg="--consumer-latency" \
+	  --container-arg="5000000" \
+	  --container-arg="--variable-rate" \
+	  --container-arg="1:60" \
+	  --container-arg="--variable-rate" \
+	  --container-arg="0:300" \
+	  $(RABBITMQ_PERFTEST_DEFAULTS)
+

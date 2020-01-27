@@ -66,7 +66,7 @@ define BASH_AUTOCOMPLETE
   complete -W \"$$($(MAKE_TARGETS) | sort | uniq)\" make gmake m
 endef
 .PHONY: bash-autocomplete
-bash-autocomplete: ## Configure bash shell autocompletion - source .env
+bash-autocomplete:
 	@echo "$(BASH_AUTOCOMPLETE)"
 .PHONY: bac
 bac: bash-autocomplete
@@ -78,7 +78,7 @@ ifneq ($(GITHUB_PERSONAL_ACCESS_TOKEN),)
 GRIP_PASS := --pass $(GITHUB_PERSONAL_ACCESS_TOKEN)
 endif
 .PHONY: readme
-readme: $(DOCKER) ## Preview README.md, as it will appear on github.com
+readme: $(DOCKER)
 	$(DOCKER) run --interactive --tty --rm \
 	  --volume $(CURDIR):/data \
 	  --volume $(HOME)/.grip:/.grip \
@@ -93,7 +93,7 @@ readme: $(DOCKER) ## Preview README.md, as it will appear on github.com
 GITHUB_WIDTH = scale='min(866,iw):-1',
 GIF_SCALE =
 .PHONY: gif
-gif: $(FFMPEG) ## Convert mp4 to gif
+gif: $(FFMPEG)
 ifndef F
 	$(error F variable must reference a valid mp4 file path)
 endif
