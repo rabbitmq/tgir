@@ -1,12 +1,14 @@
-Official repository for TGIR! While it is inspired by [TGIK!](https://github.com/vmware-tanzu/tgik), there are a few notable differences:
+Official repository for TGI RabbitMQ, a series of videos produced by the RabbitMQ team.
 
-* We expect most episodes to be pre-recorded, like a TV show
-* The first season will have twelve episodes, one episode on the last Friday of every month
-* Each episode contains all the code so that you can follow along
+This show is inspired by [TGI Kubernetes](https://github.com/vmware-tanzu/tgik) - thank you! - with a couple of important differences:
+
+1. The last Friday of every month we ship a new episode.
+1. Episodes are pre-recorded. We are on the fence regarding live streaming - while we don't rule it out, we pre-record by default.
+1. And, most importantly, this show is about RabbitMQ, not Kubernetes - there will be some K8S, but the focus is RabbitMQ.
 
 The [playlist index](playlist.md) contains a list of all content.
 
-The [official YouTube channel can be found here](https://tgir.rabbitmq.com).
+The [official YouTube channel can be found here](https://tgi.rabbitmq.com).
 
 ## Suggest an episode
 
