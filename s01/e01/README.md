@@ -6,7 +6,7 @@
 
 ## Introduction
 
-Welcome to the first episode of TGI RabbitMQ 2020, where we show you how to upgrade a production cluster from RabbitMQ 3.7 to 3.8.
+Welcome to the first episode of TGI RabbitMQ 2020, where we show you how to upgrade a production RabbitMQ 3.7 to 3.8.
 Before we dive into today's main topic, let's answer the first question:
 
 ### What is TGI RabbitMQ?
@@ -56,9 +56,11 @@ The above questions come up over and over again and I believe that many would be
 
 So why are we doing this now? https://www.rabbitmq.com/versions.html
 
+We will start with the simplest RabbitMQ deployment and perform the simplest upgrade procedure: in-place.
+
 ## The Setup
 
-One RabbitMQ 3.7 node with management enabled:
+One RabbitMQ 3.7 node with `rabbitmq-management`:
 
 ```sh
 make rmq-server
@@ -69,7 +71,6 @@ gcloud compute instances create-with-container tgir-s01e01-rmq1-server \
   --container-mount-disk=name=tgir-s01e01-rmq1-server-persistent,mount-path=/var/lib/rabbitmq \
   --container-image=rabbitmq:3.7.23-management
 ```
-
 
 A production workload using PerfTest:
 
@@ -154,8 +155,16 @@ This command does the following:
 * flushes all data to disk
 * stops all Message Stores as well as the Schema DB (Mnesia)
 
-It does not however stop the Erlang VM, meaning that from a system supervisor perspective, the system process that represents RabbitMQ is still running.
-We know that this system process is the Erlang VM, a.k.a. `beam.smp`, so even if RabbitMQ and all its dependencies that run inside the Erlang VM are stopped, everything is OK from a system supervisor perspective.
+This command **does not** stop the Erlang VM, meaning that from a system supervisor perspective, the system process that represents RabbitMQ is still running.
+We know that this system process is the Erlang VM (`beam.smp`), so even if RabbitMQ and all its dependencies that run inside the Erlang VM are stopped, everything is OK from a system supervisor perspective.
+
+> `rabbitmqctl stop_app` is something that most RabbitMQ ops procedures simply ignore.
+The typical approach is to send the `SIGTERM` UNIX signal to the Erlang VM process, wait for 30 seconds, and then `SIGKILL`.
+This is an unclean RabbitMQ shutdown which may have undesired side-effects.
+
+> A better approach would be to stop just RabbitMQ, using `rabbitmqctl stop_app`, wait until this command returns successfully - exit code 0 - and then continue with the Erlang VM shutdown.
+After RabbitMQ is stopped in this manner, sending `SIGTERM` to the Erlang VM is definitely safe & appropriate.
+If you want to know more about this, follow [rabbitmq/rabbitmq-server#2222](https://github.com/rabbitmq/rabbitmq-server/issues/2222).
 
 We are now ready to shutdown the Erlang VM, even the entire OS in our case, and have it restart with the new RabbitMQ version:
 
@@ -172,27 +181,62 @@ Stopping instance [tgir-s01e01-rmq1-server]...done.
 Starting instance [tgir-s01e01-rmq1-server]...done.
 ```
 
-We need to-reopen RabbitMQ Management because the public IP is ephemeral and it changes during the upgrade:
-
-```
-make rmq-management
-open http://"$(gcloud compute instances describe tgir-s01e01-rmq1-server --format='get(networkInterfaces[0].accessConfigs[0].natIP)')":15672
-```
-
-![rmq-management](./tgir-s01e01-rmq-management-38x.png)
-
-To make it easier to understand what happened from a RabbitMQ perspective, let's only look at the lifecycle logs:
+Now that the upgrade is complete, let's understand what happened from a RabbitMQ perspective by looking at lifecycle logs:
 
 ```
 make logs-rmq-lifecycle
 open "https://console.cloud.google.com/logs/viewer?project=$(gcloud config get-value project 2>/dev/null)&minLogLevel=0&expandAll=false&limitCustomFacetWidth=true&interval=PT1H&advancedFilter=resource.type%3Dgce_instance%0AlogName%3Dprojects%2F$(gcloud config get-value project 2>/dev/null)%2Flogs%2Fcos_containers%0AjsonPayload.message:%20(%22starting%20rabbitmq%22%20OR%20%22started%22%20OR%20%22stopping%22%20OR%20%22stopped%22%20AND%20NOT%20%22supervisor%22)"
 ```
 
+![logs-rmq-lifecycle](./tgir-s01e01-logs-rmq-lifecycle.png)
+
 We can confirm the following:
 
-* We are now running RabbitMQ 3.8.2 - the upgrade took about 1 minute and 30 seconds
-* All durable queues and persistent messages are exactly as we left them before the upgrade
+* The upgrade took 1 minute and 30 seconds - `14:58:44 - 15:00:14`
+* We are now running RabbitMQ 3.8.2
 * All clients have reconnected, none crashed
+* All durable queues and persistent messages are exactly as we left them before the upgrade. All RabbitMQ data is kept on a persistent disk which was automatically re-attached to the new VM.
+
+We need to re-open RabbitMQ Management because the public IP is ephemeral and it changed after the upgrade:
+
+```
+make rmq-management
+open http://"$(gcloud compute instances describe tgir-s01e01-rmq1-server --format='get(networkInterfaces[0].accessConfigs[0].natIP)')":15672
+```
+
+![rmq-management-38x](./tgir-s01e01-rmq-management-38x.png)
+
+Now that we have successfully upgraded in-place RabbitMQ 3.7 to 3.8 node, let's do the same for a 3-node cluster.
+
+## Upgrading a Cluster
+
+Let's stop our workload and re-create our RabbitMQ 3.8 node as 3.7:
+
+```
+make rmq-workload-stop
+...
+make rmq-server-delete
+...
+make rmq-server
+...
+```
+
+Let's create two more RabbitMQ 3.7 nodes and forma 3-node cluster:
+
+```sh
+make rmq-server RMQ_NODE=2
+...
+make rmq-server RMQ_NODE=3
+...
+make rmq-server-bash
+...
+```
+
+### Rolling Upgrade
+
+### Sudden Upgrade
+
+### Feature Flags
 
 ---
 

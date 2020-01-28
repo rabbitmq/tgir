@@ -17,6 +17,8 @@ MESSAGE_SIZE := 1000
 instances: ## List all instances
 	gcloud compute instances list --filter='name ~ $(NAMESPACE)'
 
+# https://cloud.google.com/logging/docs/view/advanced-queries
+
 logs:
 	open "https://console.cloud.google.com/logs/viewer?project=$(GCP_PROJECT)&minLogLevel=0&expandAll=false&limitCustomFacetWidth=true&interval=PT1H&advancedFilter=resource.type%3Dgce_instance%0AlogName%3Dprojects%2F$(GCP_PROJECT)%2Flogs%2Fcos_containers%0ANOT%20jsonPayload.message:%22consumer%20latency%22%0ANOT%20jsonPayload.message:%22has%20a%20client-provided%20name%22%0ANOT%20jsonPayload.message:%22authenticated%20and%20granted%20access%22%0ANOT%20jsonPayload.message:%22starting%20producer%22%0ANOT%20jsonPayload.message:%22starting%20consumer%22%0ANOT%20jsonPayload.message:%22accepting%20AMQP%20connection%22"
 
@@ -89,6 +91,12 @@ rmq-workload-stop: _delete ## Stop RabbitMQ production workload
 
 rmq-workload-ctop: INSTANCE = rmq$(RMQ_NODE)-workload
 rmq-workload-ctop: _ctop ## Run ctop on the VM that runs the RabbitMQ message backlog
+
+rmq-drain-start: INSTANCE = rmq$(RMQ_NODE)-drain
+rmq-drain-start: _rmq-drain ## Simulate RabbitMQ backlog drain
+
+rmq-drain-stop: INSTANCE = rmq$(RMQ_NODE)-drain
+rmq-drain-stop: _delete ## Stop RabbitMQ backlog drain
 
 _ssh:
 	gcloud compute ssh $(NAMESPACE)-$(INSTANCE)
@@ -174,6 +182,15 @@ _rmq-backlog:
 	  --container-arg="0" \
 	  --container-arg="--rate" \
 	  --container-arg="1" \
+	  $(RABBITMQ_PERFTEST_DEFAULTS)
+
+_rmq-drain:
+	gcloud compute instances create-with-container $(NAMESPACE)-$(INSTANCE) \
+	  $(GCP_COS_CONTAINER_DEFAULTS) \
+	  --machine-type=n1-highcpu-4 \
+	  --container-arg="--autoack" \
+	  --container-arg="--producers" \
+	  --container-arg="0" \
 	  $(RABBITMQ_PERFTEST_DEFAULTS)
 
 _rmq-workload:
