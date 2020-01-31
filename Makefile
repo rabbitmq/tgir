@@ -113,3 +113,14 @@ endif
 	$(FFMPEG) -i $(F) \
 	  -vcodec h264 \
 	  $(subst .mov,.mp4,$(F))
+
+.PHONY: mp4-concat
+mp4-concat: $(FFMPEG)
+ifndef D
+	$(error D variable must reference the dir where multiple mp4 files are stored)
+endif
+	$(FFMPEG) -f concat \
+	-safe 0 \
+	-i <(for f in $(D)/*.mp4; do echo "file '$$f'"; done) \
+	-c copy \
+	$(D)/concat.mp4

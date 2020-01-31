@@ -1,39 +1,39 @@
 # TGIR S01E01: How to upgrade from RabbitMQ 3.7 to 3.8?
 
+<a href="https://www.youtube.com/watch?v=DynCqFtnSoY" target="_blank"><img src="video.png" border="50" /></a>
+
 * Proposed by [@dlresende](https://twitter.com/dlresende) via [rabbitmq/tgir#2](https://github.com/rabbitmq/tgir/issues/2)
 * Hosted by [@gerhardlazu](https://twitter.com/gerhardlazu)
 * Published on: 2020-01-31
 
-## Outline
+## Timeline
 
-* Introduction
-  * TGIK
-  * Follow along `-n`
-* The Setup
-  * `make server`
-  * `make server-ctop`
-  * `make logs`
-  * `make management`
-  * `make workload`
-  * `make workload-ctop`
-* The Upgrade Process
-  * `make server-38x` - `make logs`
-  * `make management`
-* A Cluster Setup
-  * `make workload-stop`
-  * `make server-delete`
-  * `make server`
-  * `make management`
-  * `make server RMQ_NODE=2`
-  * `make server RMQ_NODE=3`
-  * `make server-bash`
-    * `rabbitmqctl stop_app`
-    * `rabbitmqctl reset`
-    * `rabbitmqctl join_cluster`
-    * `rabbitmqctl start_app`
-* Rolling Upgrade
-* Feature Flags
-* Propose a Topic
+* [00:00:00](https://www.youtube.com/watch?v=DynCqFtnSoY&t=0s) - **Welcome to TGIR!**
+* [00:00:50](https://www.youtube.com/watch?v=DynCqFtnSoY&t=50s) - Today's topic
+* [00:02:19](https://www.youtube.com/watch?v=DynCqFtnSoY&t=139s) - How to follow along
+* [00:04:15](https://www.youtube.com/watch?v=DynCqFtnSoY&t=255s) - **Single Node RabbitMQ**
+* [00:06:58](https://www.youtube.com/watch?v=DynCqFtnSoY&t=418s) - Simulate production workload
+* [00:08:12](https://www.youtube.com/watch?v=DynCqFtnSoY&t=492s) - In-place upgrade from RabbitMQ v3.7.23 to RabbitMQ v3.8.2
+* [00:16:13](https://www.youtube.com/watch?v=DynCqFtnSoY&t=973s) - In-place downgrade from RabbitMQ v3.8.2 to RabbitMQ v3.7.23 😱
+* [00:20:38](https://www.youtube.com/watch?v=DynCqFtnSoY&t=1238s) - Second upgrade attempt, after client connection recovery fix
+* [00:22:49](https://www.youtube.com/watch?v=DynCqFtnSoY&t=1369s) - How long should an in-place single node upgrade take?
+* [00:26:05](https://www.youtube.com/watch?v=DynCqFtnSoY&t=1565s) - **Three-Nodes RabbitMQ Cluster**
+* [00:30:59](https://www.youtube.com/watch?v=DynCqFtnSoY&t=1859s) - Simulate production workload
+* [00:35:16](https://www.youtube.com/watch?v=DynCqFtnSoY&t=2116s) - Start in-place upgrade of first node
+* [00:37:28](https://www.youtube.com/watch?v=DynCqFtnSoY&t=2248s) - First node is restarting as v3.8.2
+* [00:39:01](https://www.youtube.com/watch?v=DynCqFtnSoY&t=2341s) - Let's randomly spread the clients across all nodes
+* [00:47:45](https://www.youtube.com/watch?v=DynCqFtnSoY&t=2865s) - Start in-place upgrade of second node
+* [00:50:00](https://www.youtube.com/watch?v=DynCqFtnSoY&t=3000s) - Second node is restarting as v3.8.2
+* [00:52:00](https://www.youtube.com/watch?v=DynCqFtnSoY&t=3120s) - The difference between rolling & all-at-once upgrade
+* [00:53:11](https://www.youtube.com/watch?v=DynCqFtnSoY&t=3191s) - Connections imbalance
+* [00:53:48](https://www.youtube.com/watch?v=DynCqFtnSoY&t=3228s) - Start in-place upgrade of last node
+* [00:55:48](https://www.youtube.com/watch?v=DynCqFtnSoY&t=3348s) - Last node is restarting as v3.8.2
+* [00:56:33](https://www.youtube.com/watch?v=DynCqFtnSoY&t=3393s) - How long should an in-place 3-nodes cluster upgrade take?
+* [00:57:40](https://www.youtube.com/watch?v=DynCqFtnSoY&t=3460s) - **RabbitMQ Feature Flags**
+* [01:00:43](https://www.youtube.com/watch?v=DynCqFtnSoY&t=3643s) - The entire cluster is now running RabbitMQ v3.8.2 fully
+* [01:04:58](https://www.youtube.com/watch?v=DynCqFtnSoY&t=3898s) - Drain all messages _tout suite_
+* [01:07:52](https://www.youtube.com/watch?v=DynCqFtnSoY&t=4072s) - Tear down all resources
+* [01:08:48](https://www.youtube.com/watch?v=DynCqFtnSoY&t=4128s) - **How to Propose a TGIR Topic**
 
 ## Introduction
 
@@ -219,9 +219,7 @@ open http://"$(gcloud compute instances describe tgir-s01e01-rmq1-server --forma
 
 ![rmq-management-38x](./tgir-s01e01-rmq-management-38x.png)
 
-Now that we have successfully upgraded in-place RabbitMQ 3.7 to 3.8 node, let's do the same for a 3-node cluster.
-
-## A Cluster Setup
+## Three-Nodes RabbitMQ Cluster
 
   * `make workload-stop`
   * `make server-delete`
@@ -235,10 +233,6 @@ Now that we have successfully upgraded in-place RabbitMQ 3.7 to 3.8 node, let's 
     * `rabbitmqctl join_cluster`
     * `rabbitmqctl start_app`
 
-## Rolling Upgrade
+## RabbitMQ Feature Flags
 
-## Feature Flags
-
-> https://www.rabbitmq.com/feature-flags.html
-
-## Propose a Topic
+## Propose a TGIR Topic
