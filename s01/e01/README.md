@@ -4,10 +4,38 @@
 * Hosted by [@gerhardlazu](https://twitter.com/gerhardlazu)
 * Published on: 2020-01-31
 
-## Introduction
+## Outline
 
-Welcome to the first episode of TGI RabbitMQ 2020, where we show you how to upgrade a production RabbitMQ 3.7 to 3.8.
-Before we dive into today's main topic, let's answer the first question:
+* Introduction
+  * TGIK
+  * Follow along `-n`
+* The Setup
+  * `make server`
+  * `make server-ctop`
+  * `make logs`
+  * `make management`
+  * `make workload`
+  * `make workload-ctop`
+* The Upgrade Process
+  * `make server-38x` - `make logs`
+  * `make management`
+* A Cluster Setup
+  * `make workload-stop`
+  * `make server-delete`
+  * `make server`
+  * `make management`
+  * `make server RMQ_NODE=2`
+  * `make server RMQ_NODE=3`
+  * `make server-bash`
+    * `rabbitmqctl stop_app`
+    * `rabbitmqctl reset`
+    * `rabbitmqctl join_cluster`
+    * `rabbitmqctl start_app`
+* Rolling Upgrade
+* Feature Flags
+* Propose a Topic
+
+## Introduction
 
 ### What is TGI RabbitMQ?
 
@@ -16,45 +44,26 @@ TGI RabbitMQ is a series of videos produced by the RabbitMQ team.
 It is inspired by [TGI Kubernetes](https://tgik.io) - thank you Joe Beda & the rest of the TGIK team - with a couple of important differences:
 
 1. The last Friday of every month we ship a new episode.
-The episode that you are watching now became available on our [RabbitMQ YouTube channel](https://tgi.rabbitmq.com) on the 31st of January 2020, the last Friday of the month.
+The episode that you are watching now became available on our [YouTube channel](https://tgi.rabbitmq.com) on the 31st of January 2020, the last Friday of the month.
 The next episode ships on the... 28th of February 2020.
 1. Episodes are pre-recorded. While we don't rule out live streams, we pre-record by default.
 1. Most importantly, this show is about RabbitMQ, not Kubernetes. OK, there will be some Kubernetes, for sure, but the focus is RabbitMQ.
 
-My favourite part is that we package and share everything that you need to follow along.
-For example, you need a budget of maybe 10 USD and a Google Cloud Platform account to do everything that I will be doing in today's episode.
-Even if you know nothing about RabbitMQ, the barrier of entry is a [Google Cloud SDK](https://cloud.google.com/sdk/install), specifically the `gcloud` CLI.
+My favourite part is that we share everything that you need to follow along in the simplest of ways: make targets with shell completion support.
+No more typos, no long commands to copy-paste, just `m<TAB> r<TAB>` and before you know it you are spinning up and tearing down RabbitMQ clusters like a pro.
+To do everything that I will be doing in today's episode you need a budget of maybe 10 USD and a Google Cloud Platform account.
+Even if you know nothing about RabbitMQ, the barrier of entry is a [Google Cloud SDK](https://cloud.google.com/sdk/install) install and config.
 Let's take a few to set this up now:
 
 ```
+make deps
 brew cask install google-cloud-sdk
-gcloud config list
+/usr/local/bin/gcloud auth login \
+&& /usr/local/bin/gcloud config set project cf-rabbitmq-core \
+&& /usr/local/bin/gcloud config set compute/zone europe-west2-b
 ```
 
-OK, let's get started with today's topic: How to upgrade from RabbitMQ 3.7 to 3.8?
-
-### [Diego Lemos](https://twitter.com/dlresende), Engineering Lead, Pivotal R&D London:
-
-A new RabbitMQ version comes out. Exciting!
-Shiny new features, bug fixes, security patches, etc. - it's time to upgrade!
-But hang on a second... there are hundreds of applications using RabbitMQ in production.
-How should we go about upgrading?
-
-This question comes up frequently in the RabbitMQ community, as part of what we call _Day 2 Operations_.
-Every company or team decide which upgrade strategy works better for them: blue-green deployment, rolling (one node at a time) upgrades, etc.
-But every strategy comes with its advantages and trade-offs, which are not well understood.
-
-* What happens to clients during a rolling upgrade?
-* What happens to particular types of queues?
-* What if an alarm gets triggered during an upgrade?
-* When should I expect for downtime?
-* When there's a risk of data loss?
-* How clusters reform after an upgrade?
-* How to configure RabbitMQ or its clients to be upgrade-resilient?
-
-The above questions come up over and over again and I believe that many would benefit from clear & concise guidance on how to tackle them.
-
-So why are we doing this now? https://www.rabbitmq.com/versions.html
+OK, let's get started with today's topic: **How to upgrade from RabbitMQ 3.7 to 3.8?**
 
 We will start with the simplest RabbitMQ deployment and perform the simplest upgrade procedure: in-place.
 
@@ -63,47 +72,50 @@ We will start with the simplest RabbitMQ deployment and perform the simplest upg
 One RabbitMQ 3.7 node with `rabbitmq-management`:
 
 ```sh
-make rmq-server
-gcloud compute instances create-with-container tgir-s01e01-rmq1-server \
-  --public-dns --boot-disk-type=pd-ssd --labels=namespace=tgir-s01e01 --container-stdin --container-tty \
+make server
+time /usr/local/bin/gcloud compute instances create-with-container tgir-s01e01-gerhard-rmq1-server \
+  --public-dns --boot-disk-type=pd-ssd --labels=namespace=tgir-s01e01-gerhard --container-stdin --container-tty \
   --machine-type=n1-standard-8 \
-  --create-disk=name=tgir-s01e01-rmq1-server-persistent,size=200GB,type=pd-ssd,auto-delete=yes \
-  --container-mount-disk=name=tgir-s01e01-rmq1-server-persistent,mount-path=/var/lib/rabbitmq \
+  --create-disk=name=tgir-s01e01-gerhard-rmq1-server-persistent,size=200GB,type=pd-ssd,auto-delete=yes \
+  --container-mount-disk=name=tgir-s01e01-gerhard-rmq1-server-persistent,mount-path=/var/lib/rabbitmq \
+  --container-env RABBITMQ_ERLANG_COOKIE=tgir-s01e01-gerhard \
   --container-image=rabbitmq:3.7.23-management
 ```
 
 A production workload using PerfTest:
 
 ```sh
-make rmq-workload-start
-gcloud compute instances create-with-container tgir-s01e01-rmq1-workload \
-  --public-dns --boot-disk-type=pd-ssd --labels=namespace=tgir-s01e01 --container-stdin --container-tty \
+make workload
+/usr/local/bin/gcloud compute instances create-with-container tgir-s01e01-gerhard-rmq1-workload \
+  --public-dns --boot-disk-type=pd-ssd --labels=namespace=tgir-s01e01-gerhard --container-stdin --container-tty \
   --machine-type=n1-highcpu-4 \
   --container-arg="--consumer-latency" \
   --container-arg="5000000" \
   --container-arg="--variable-rate" \
   --container-arg="1:60" \
   --container-arg="--variable-rate" \
-  --container-arg="0:300" \
-  --container-image=pivotalrabbitmq/perf-test:dev-2020.01.22 --container-arg="--auto-delete" --container-arg="false" --container-arg="--consumers" --container-arg="4000" --container-arg="--confirm" --container-arg="1" --container-arg="--confirm-timeout" --container-arg="120" --container-arg="--connection-recovery-interval" --container-arg="30-120" --container-arg="--flag" --container-arg="persistent" --container-arg="--heartbeat-sender-threads" --container-arg="10" --container-arg="--nio-threads" --container-arg="10" --container-arg="--nio-thread-pool" --container-arg="20" --container-arg="--producers" --container-arg="4000" --container-arg="--producer-random-start-delay" --container-arg="60" --container-arg="--producer-scheduler-threads" --container-arg="10" --container-arg="--qos" --container-arg="5" --container-arg="--queue-args" --container-arg="x-max-length=1000" --container-arg="--queue-pattern" --container-arg="q%d" --container-arg="--queue-pattern-from" --container-arg="1" --container-arg="--queue-pattern-to" --container-arg="4000" --container-arg="--servers-startup-timeout" --container-arg="60" --container-arg="--size" --container-arg="1000" --container-arg="--uris" --container-arg="amqp://guest:guest@tgir-s01e01-rmq1-server.c.cf-rabbitmq-core.internal:5672/%2f,amqp://guest:guest@tgir-s01e01-rmq2-server.c.cf-rabbitmq-core.internal:5672/%2f,amqp://guest:guest@tgir-s01e01-rmq3-server.c.cf-rabbitmq-core.internal:5672/%2f"
+  --container-arg="0:240" \
+  --container-image=pivotalrabbitmq/perf-test:dev-2020.01.22 --container-arg="--auto-delete" --container-arg="false" --container-arg="--consumers" --container-arg="4000" --container-arg="--confirm" --container-arg="1" --container-arg="--confirm-timeout" --container-arg="120" --container-arg="--connection-recovery-interval" --container-arg="240" --container-arg="--flag" --container-arg="persistent" --container-arg="--heartbeat-sender-threads" --container-arg="10" --container-arg="--nio-threads" --container-arg="10" --container-arg="--nio-thread-pool" --container-arg="20" --container-arg="--producers" --container-arg="4000" --container-arg="--producer-random-start-delay" --container-arg="60" --container-arg="--producer-scheduler-threads" --container-arg="10" --container-arg="--qos" --container-arg="5" --container-arg="--queue-args" --container-arg="x-max-length=1000" --container-arg="--queue-pattern" --container-arg="q%d" --container-arg="--queue-pattern-from" --container-arg="$(((1-1)*4000+1))" --container-arg="--queue-pattern-to" --container-arg="$((1*4000))" --container-arg="--servers-startup-timeout" --container-arg="30" --container-arg="--size" --container-arg="1000" --container-arg="--uri" --container-arg="amqp://guest:guest@tgir-s01e01-gerhard-rmq1-server.c.cf-rabbitmq-core.internal:5672/%2f"
 ```
 
-Let's check RabbitMQ Management:
+Let's check RabbitMQ Management (username is `guest` & password is `guest`):
 
 ```
-make rmq-management
-open http://"$(gcloud compute instances describe tgir-s01e01-rmq1-server --format='get(networkInterfaces[0].accessConfigs[0].natIP)')":15672
+make management
+/usr/local/bin/gcloud compute firewall-rules describe gerhard-allow-rmq-management \
+|| /usr/local/bin/gcloud compute firewall-rules create gerhard-allow-rmq-management \
+	--allow=TCP:15672 --source-ranges=82.39.214.211/32
+open http://"$(/usr/local/bin/gcloud compute instances describe tgir-s01e01-gerhard-rmq1-server --format='get(networkInterfaces[0].accessConfigs[0].natIP)')":15672
 ```
 
-Notice the RabbitMQ & Erlang version, as well as the number of connections, channels & queues.
-
+In RabbitMQ Management, notice the RabbitMQ & Erlang version, as well as the number of connections & queues.
 ![rmq-management-37x](./tgir-s01e01-rmq-management-37x.png)
 
-What I really want to see now is logs for both RabbitMQ as well as PerfTest:
+What I really want to see is logs from both RabbitMQ & PerfTest:
 
 ```
 make logs
-open "https://console.cloud.google.com/logs/viewer?project=$(gcloud config get-value project 2>/dev/null)&minLogLevel=0&expandAll=false&limitCustomFacetWidth=true&interval=PT1H&advancedFilter=resource.type%3Dgce_instance%0AlogName%3Dprojects%2F$(gcloud config get-value project 2>/dev/null)%2Flogs%2Fcos_containers%0ANOT%20jsonPayload.message:%22consumer%20latency%22%0ANOT%20jsonPayload.message:%22has%20a%20client-provided%20name%22%0ANOT%20jsonPayload.message:%22authenticated%20and%20granted%20access%22%0ANOT%20jsonPayload.message:%22starting%20producer%22%0ANOT%20jsonPayload.message:%22starting%20consumer%22%0ANOT%20jsonPayload.message:%22accepting%20AMQP%20connection%22"
+open "https://console.cloud.google.com/logs/viewer?project=cf-rabbitmq-core&minLogLevel=0&expandAll=false&limitCustomFacetWidth=true&interval=PT1H&advancedFilter=resource.type%3Dgce_instance%0AlogName%3Dprojects%2Fcf-rabbitmq-core%2Flogs%2Fcos_containers%0ANOT%20jsonPayload.message:%22consumer%20latency%22%0ANOT%20jsonPayload.message:%22has%20a%20client-provided%20name%22%0ANOT%20jsonPayload.message:%22authenticated%20and%20granted%20access%22%0ANOT%20jsonPayload.message:%22starting%20producer%22%0ANOT%20jsonPayload.message:%22starting%20consumer%22%0ANOT%20jsonPayload.message:%22accepting%20AMQP%20connection%22"
 ```
 
 ![logs](./tgir-s01e01-logs.png)
@@ -129,11 +141,13 @@ No client will crash, it will simply wait for the RabbitMQ node to become availa
 Let's keep an eye on all clients before we start the upgrade process:
 
 ```
-make rmq-workload-ctop
-gcloud compute ssh tgir-s01e01-rmq1-workload -- "docker run --rm --interactive --tty --cpus 0.5 --memory 128M --volume /var/run/docker.sock:/var/run/docker.sock --name ctop quay.io/vektorlab/ctop"
+make workload-ctop
+/usr/local/bin/gcloud compute ssh tgir-s01e01-gerhard-rmq1-workload -- "docker run --rm --interactive --tty --cpus 0.5 --memory 128M --volume /var/run/docker.sock:/var/run/docker.sock --name ctop quay.io/vektorlab/ctop"
 ```
 
 ## The Upgrade Process
+
+> https://www.rabbitmq.com/upgrade.html
 
 We are now ready to upgrade our RabbitMQ 3.7 node to 3.8.
 
@@ -141,7 +155,7 @@ The most important aspect of this is to stop the RabbitMQ node gracefully.
 We do this by stopping the RabbitMQ app:
 
 ```
-make rmq-server-stop-app
+make app-stop
 gcloud compute ssh tgir-s01e01-rmq1-server -- \
   "docker exec \$(docker container ls | awk '/rabbitmq/ { print \$1 }') rabbitmqctl stop_app"
 Stopping rabbit application on node rabbit@tgir-s01e01-rmq1-server ...
@@ -169,7 +183,7 @@ If you want to know more about this, follow [rabbitmq/rabbitmq-server#2222](http
 We are now ready to shutdown the Erlang VM, even the entire OS in our case, and have it restart with the new RabbitMQ version:
 
 ```
-make rmq-server-38x
+make server-38x
 gcloud compute ssh tgir-s01e01-rmq1-server -- \
   "docker exec \$(docker container ls | awk '/rabbitmq/ { print \$1 }') rabbitmqctl stop_app"
 Stopping rabbit application on node rabbit@tgir-s01e01-rmq1-server ...
@@ -184,11 +198,10 @@ Starting instance [tgir-s01e01-rmq1-server]...done.
 Now that the upgrade is complete, let's understand what happened from a RabbitMQ perspective by looking at lifecycle logs:
 
 ```
-make logs-rmq-lifecycle
+make logs-lifecycle
 open "https://console.cloud.google.com/logs/viewer?project=$(gcloud config get-value project 2>/dev/null)&minLogLevel=0&expandAll=false&limitCustomFacetWidth=true&interval=PT1H&advancedFilter=resource.type%3Dgce_instance%0AlogName%3Dprojects%2F$(gcloud config get-value project 2>/dev/null)%2Flogs%2Fcos_containers%0AjsonPayload.message:%20(%22starting%20rabbitmq%22%20OR%20%22started%22%20OR%20%22stopping%22%20OR%20%22stopped%22%20AND%20NOT%20%22supervisor%22)"
 ```
 
-![logs-rmq-lifecycle](./tgir-s01e01-logs-rmq-lifecycle.png)
 
 We can confirm the following:
 
@@ -200,7 +213,7 @@ We can confirm the following:
 We need to re-open RabbitMQ Management because the public IP is ephemeral and it changed after the upgrade:
 
 ```
-make rmq-management
+make management
 open http://"$(gcloud compute instances describe tgir-s01e01-rmq1-server --format='get(networkInterfaces[0].accessConfigs[0].natIP)')":15672
 ```
 
@@ -208,62 +221,24 @@ open http://"$(gcloud compute instances describe tgir-s01e01-rmq1-server --forma
 
 Now that we have successfully upgraded in-place RabbitMQ 3.7 to 3.8 node, let's do the same for a 3-node cluster.
 
-## Upgrading a Cluster
+## A Cluster Setup
 
-Let's stop our workload and re-create our RabbitMQ 3.8 node as 3.7:
+  * `make workload-stop`
+  * `make server-delete`
+  * `make server`
+  * `make management`
+  * `make server RMQ_NODE=2`
+  * `make server RMQ_NODE=3`
+  * `make server-bash`
+    * `rabbitmqctl stop_app`
+    * `rabbitmqctl reset`
+    * `rabbitmqctl join_cluster`
+    * `rabbitmqctl start_app`
 
-```
-make rmq-workload-stop
-...
-make rmq-server-delete
-...
-make rmq-server
-...
-```
+## Rolling Upgrade
 
-Let's create two more RabbitMQ 3.7 nodes and forma 3-node cluster:
+## Feature Flags
 
-```sh
-make rmq-server RMQ_NODE=2
-...
-make rmq-server RMQ_NODE=3
-...
-make rmq-server-bash
-...
-```
+> https://www.rabbitmq.com/feature-flags.html
 
-### Rolling Upgrade
-
-### Sudden Upgrade
-
-### Feature Flags
-
----
-
-* What happens to clients during a rolling upgrade?
-* What happens to particular types of queues?
-* What if an alarm gets triggered during an upgrade?
-* When should I expect for downtime?
-* When there's a risk of data loss?
-* How clusters reform after an upgrade?
-* How to configure RabbitMQ or its clients to be upgrade-resilient?
-
-### How do I ensure that messages are not lost?
-
-* 8 queue type / message flag / TTL combinations
-* 10k messages per queue
-
-Publisher confirms & consumer acknowledgements are a pre-requisite before we can discuss message loss.
-
-| Queue type  | Message flag     | Messages lost       |
-| ---         | ---              | :--                 |
-| Non-durable |                  | Yes                 |
-| Non-durable | persistent       | Yes                 |
-| Durable     |                  | Yes                 |
-| Durable     | persistent       | No                  |
-| Lazy        |                  | No?                 |
-| Lazy        | persistent       | No                  |
-
-## Learn more
-
-* [Upgrading RabbitMQ](https://www.rabbitmq.com/upgrade.html)
+## Propose a Topic
