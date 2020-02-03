@@ -3,8 +3,10 @@ include ../../Makefile
 NAMESPACE := tgir-s01e01-$(USER)
 
 # https://hub.docker.com/_/rabbitmq?tab=tags
+DOCKER_RABBITMQ_36x_IMAGE = rabbitmq:3.6.16-management
 DOCKER_RABBITMQ_37x_IMAGE = rabbitmq:3.7.23-management
 DOCKER_RABBITMQ_38x_IMAGE = rabbitmq:3.8.2-management
+DOCKER_RABBITMQ_IMAGE ?= $(DOCKER_RABBITMQ_37x_IMAGE)
 # https://hub.docker.com/r/pivotalrabbitmq/perf-test/tags
 DOCKER_RABBITMQ_PERFTEST_IMAGE := pivotalrabbitmq/perf-test:dev-2020.01.22
 
@@ -15,9 +17,6 @@ QUEUES_FROM := $$((($(RMQ_NODE)-1)*$(NUMBER_OF_QUEUES_PER_NODE)+1))
 QUEUES_TO := $$(($(RMQ_NODE)*$(NUMBER_OF_QUEUES_PER_NODE)))
 MAX_MESSAGES_PER_QUEUE := 1000
 MESSAGE_SIZE := 1000
-
-q:
-	echo $(QUEUES_FROM)-$(QUEUES_TO)
 
 # You may want to overwrite this with your GCP project, e.g. export GCP_PROJECT=my-project-name
 GCP_PROJECT ?= cf-rabbitmq-core
@@ -61,7 +60,7 @@ server: $(GCLOUD) ## Create RabbitMQ node
 	  --create-disk=name=$(NAMESPACE)-rmq$(RMQ_NODE)-server-persistent,size=200GB,type=pd-ssd,auto-delete=yes \
 	  --container-mount-disk=name=$(NAMESPACE)-rmq$(RMQ_NODE)-server-persistent,mount-path=/var/lib/rabbitmq \
 	  --container-env RABBITMQ_ERLANG_COOKIE=$(NAMESPACE) \
-	  --container-image=$(DOCKER_RABBITMQ_37x_IMAGE)
+	  --container-image=$(DOCKER_RABBITMQ_IMAGE)
 
 define RMQ_SERVER_EXTERNAL_IP
 $(GCLOUD) compute instances describe $(NAMESPACE)-rmq$(RMQ_NODE)-server \
@@ -82,7 +81,6 @@ management-allow: $(GCLOUD)
 server-37x: $(GCLOUD) app-stop ## Run v3.7.x RabbitMQ node
 	$(GCLOUD) compute instances update-container $(NAMESPACE)-rmq$(RMQ_NODE)-server \
 	  --container-image=$(DOCKER_RABBITMQ_37x_IMAGE)
-
 
 server-38x: $(GCLOUD) app-stop ## Run v3.8.x RabbitMQ node
 	$(GCLOUD) compute instances update-container $(NAMESPACE)-rmq$(RMQ_NODE)-server \
