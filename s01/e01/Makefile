@@ -111,6 +111,9 @@ backlog: _backlog ## Simulate RabbitMQ message backlog
 backlog-stop: INSTANCE = rmq$(RMQ_NODE)-backlog
 backlog-stop: _delete ## Stop RabbitMQ message backlog
 
+backlog-ctop: INSTANCE = rmq$(RMQ_NODE)-backlog
+backlog-ctop: _ctop ## Run ctop on RabbitMQ message backlog
+
 workload: INSTANCE = rmq$(RMQ_NODE)-workload
 workload: _workload ## Simulate RabbitMQ production workload
 
@@ -125,6 +128,9 @@ drain: _drain ## Simulate RabbitMQ backlog drain
 
 drain-stop: INSTANCE = rmq$(RMQ_NODE)-drain
 drain-stop: _delete ## Stop RabbitMQ backlog drain
+
+drain-ctop: INSTANCE = rmq$(RMQ_NODE)-drain
+drain-ctop: _ctop ## Run ctop on RabbitMQ backlog drain
 
 _ssh: $(GCLOUD)
 	$(GCLOUD) compute ssh $(NAMESPACE)-$(INSTANCE)
