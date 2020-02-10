@@ -11,6 +11,7 @@ DOCKER_RABBITMQ_PERFTEST_IMAGE := pivotalrabbitmq/perf-test:2.10.0
 
 RMQ_NODE ?= 1
 RMQ_MANAGEMENT_PORT := 15672
+NETDATA_PORT := 19999
 QUEUES := 75
 PUBLISHERS := $(QUEUES)
 PUBLISH_EVERY := 30
@@ -81,21 +82,32 @@ server: $(GCLOUD) ## Create RabbitMQ node
 	  --container-env RABBITMQ_ERLANG_COOKIE=$(NAMESPACE) \
 	  --container-image=$(DOCKER_RABBITMQ_IMAGE)
 
-define RMQ_SERVER_EXTERNAL_IP
-$(GCLOUD) compute instances describe $(NAMESPACE)-rmq$(RMQ_NODE)-server \
+define EXTERNAL_IP
+$(GCLOUD) compute instances describe $(NAMESPACE)-$(INSTANCE) \
   --format='get(networkInterfaces[0].accessConfigs[0].natIP)'
 endef
-management: $(GCLOUD) management-allow ## Open RabbitMQ Management
-	open http://"$$($(RMQ_SERVER_EXTERNAL_IP))":$(RMQ_MANAGEMENT_PORT)
 
-management-deny: $(GCLOUD)
-	$(GCLOUD) compute firewall-rules describe $(USER)-allow-rmq-management \
-	&& $(GCLOUD) compute firewall-rules delete $(USER)-allow-rmq-management
+management: INSTANCE=rmq$(RMQ_NODE)-server
+management: $(GCLOUD) management-allow ## Open RabbitMQ Management
+	open http://"$$($(EXTERNAL_IP))":$(RMQ_MANAGEMENT_PORT)
 
 management-allow: $(GCLOUD)
 	$(GCLOUD) compute firewall-rules describe $(USER)-allow-rmq-management \
 	|| $(GCLOUD) compute firewall-rules create $(USER)-allow-rmq-management \
 		--allow=TCP:$(RMQ_MANAGEMENT_PORT) --source-ranges=$(shell curl -s https://api.ipify.org)/32
+
+management-deny: $(GCLOUD)
+	$(GCLOUD) compute firewall-rules describe $(USER)-allow-rmq-management \
+	&& $(GCLOUD) compute firewall-rules delete $(USER)-allow-rmq-management
+
+netdata-allow: $(GCLOUD)
+	$(GCLOUD) compute firewall-rules describe $(USER)-allow-netdata \
+	|| $(GCLOUD) compute firewall-rules create $(USER)-allow-netdata \
+		--allow=TCP:$(NETDATA_PORT) --source-ranges=$(shell curl -s https://api.ipify.org)/32
+
+netdata-deny: $(GCLOUD)
+	$(GCLOUD) compute firewall-rules describe $(USER)-allow-netdata \
+	&& $(GCLOUD) compute firewall-rules delete $(USER)-allow-netdata
 
 server-delete: INSTANCE = rmq$(RMQ_NODE)-server
 server-delete: _delete ## Delete RabbitMQ node
@@ -112,6 +124,9 @@ server-ctop: _ctop ## Run ctop on VM that runs RabbitMQ node
 server-htop: INSTANCE = rmq$(RMQ_NODE)-server
 server-htop: _htop ## Run htop on VM that runs RabbitMQ node
 
+server-netdata: INSTANCE = rmq$(RMQ_NODE)-server
+server-netdata: _netdata ## Start netdata & open dashboard on RabbitMQ node
+
 backlog: INSTANCE = rmq$(RMQ_NODE)-backlog
 backlog: _backlog ## Simulate RabbitMQ message backlog
 
@@ -121,14 +136,32 @@ backlog-stop: _delete ## Stop RabbitMQ message backlog
 backlog-ctop: INSTANCE = rmq$(RMQ_NODE)-backlog
 backlog-ctop: _ctop ## Run ctop on RabbitMQ message backlog
 
+backlog-netdata: INSTANCE = rmq$(RMQ_NODE)-backlog
+backlog-netdata: _netdata ## Start netdata & open dashboard on RabbitMQ message backlog
+
+drain: INSTANCE = rmq$(RMQ_NODE)-drain
+drain: _drain ## Simulate RabbitMQ message drain
+
+drain-stop: INSTANCE = rmq$(RMQ_NODE)-drain
+drain-stop: _delete ## Stop RabbitMQ message drain
+
+drain-ctop: INSTANCE = rmq$(RMQ_NODE)-drain
+drain-ctop: _ctop ## Run ctop on RabbitMQ message drain
+
+drain-netdata: INSTANCE = rmq$(RMQ_NODE)-drain
+drain-netdata: _netdata ## Start netdata & open dashboard on RabbitMQ message drain
+
 workload: INSTANCE = rmq$(RMQ_NODE)-workload
-workload: _workload ## Simulate RabbitMQ production workload
+workload: _workload ## Simulate RabbitMQ workload
 
 workload-stop: INSTANCE = rmq$(RMQ_NODE)-workload
-workload-stop: _delete ## Stop RabbitMQ production workload
+workload-stop: _delete ## Stop RabbitMQ workload
 
 workload-ctop: INSTANCE = rmq$(RMQ_NODE)-workload
-workload-ctop: _ctop ## Run ctop on RabbitMQ production workload
+workload-ctop: _ctop ## Run ctop on RabbitMQ workload
+
+workload-netdata: INSTANCE = rmq$(RMQ_NODE)-workload
+workload-netdata: _netdata ## Start netdata & open dashboard on RabbitMQ workload
 
 _ssh: $(GCLOUD)
 	$(GCLOUD) compute ssh $(NAMESPACE)-$(INSTANCE)
@@ -162,6 +195,25 @@ endef
 _htop: $(GCLOUD)
 	$(GCLOUD) compute ssh $(NAMESPACE)-$(INSTANCE) -- "$(HTOP_CONTAINER)"
 
+# https://docs.netdata.cloud/packaging/docker/#run-netdata-with-the-docker-command
+define NETDATA_CONTAINER
+docker container inspect --format '{{.State.Status}}' netdata \
+|| docker run --detach --name=netdata \
+   --cpus 1 --memory 8G \
+   --publish $(NETDATA_PORT):$(NETDATA_PORT) \
+   --volume /etc/passwd:/host/etc/passwd:ro \
+   --volume /etc/group:/host/etc/group:ro \
+   --volume /proc:/host/proc:ro \
+   --volume /sys:/host/sys:ro \
+   --volume /etc/os-release:/host/etc/os-release:ro \
+   --cap-add SYS_PTRACE \
+   --security-opt apparmor=unconfined \
+   netdata/netdata
+endef
+_netdata: $(GCLOUD) netdata-allow
+	$(GCLOUD) compute ssh $(NAMESPACE)-$(INSTANCE) -- "$(NETDATA_CONTAINER)" \
+	&& open http://"$$($(EXTERNAL_IP))":$(NETDATA_PORT)
+
 define RABBITMQ_PERFTEST_DEFAULTS
 --container-image=$(DOCKER_RABBITMQ_PERFTEST_IMAGE) \
 --container-arg="--auto-delete" \
@@ -181,7 +233,7 @@ endef
 _backlog: $(GCLOUD)
 	$(GCLOUD) compute instances create-with-container $(NAMESPACE)-$(INSTANCE) \
 	  $(GCP_COS_CONTAINER_DEFAULTS) \
-	  --machine-type=n1-highcpu-2 \
+	  --machine-type=n1-standard-1 \
 	  --container-arg="--confirm" \
 	  --container-arg="1" \
 	  --container-arg="--confirm-timeout" \
@@ -206,10 +258,29 @@ _backlog: $(GCLOUD)
 	  --container-arg="$(BACKLOG_QUEUES)" \
 	  $(RABBITMQ_PERFTEST_DEFAULTS)
 
+_drain: $(GCLOUD)
+	$(GCLOUD) compute instances create-with-container $(NAMESPACE)-$(INSTANCE) \
+	  $(GCP_COS_CONTAINER_DEFAULTS) \
+	  --machine-type=n1-standard-1 \
+	  --container-arg="--autoack" \
+	  --container-arg="--consumers" \
+	  --container-arg="$(BACKLOG_QUEUES)" \
+	  --container-arg="--producers" \
+	  --container-arg="0" \
+	  --container-arg="--queue-args" \
+	  --container-arg="x-max-length=$(MAX_MESSAGES_PER_BACKLOG_QUEUE)" \
+	  --container-arg="--queue-pattern" \
+	  --container-arg="backlog%d" \
+	  --container-arg="--queue-pattern-from" \
+	  --container-arg="1" \
+	  --container-arg="--queue-pattern-to" \
+	  --container-arg="$(BACKLOG_QUEUES)" \
+	  $(RABBITMQ_PERFTEST_DEFAULTS)
+
 _workload: $(GCLOUD)
 	$(GCLOUD) compute instances create-with-container $(NAMESPACE)-$(INSTANCE) \
 	  $(GCP_COS_CONTAINER_DEFAULTS) \
-	  --machine-type=n1-highcpu-2 \
+	  --machine-type=f1-micro \
 	  --container-arg="--consumers" \
 	  --container-arg="$(CONSUMERS)" \
 	  --container-arg="--producers" \
