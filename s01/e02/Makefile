@@ -13,9 +13,12 @@ management_PORT := 15672
 prometheus_PORT := 15692
 netdata_PORT := 19999
 
-30_DAYS := $$((30*24*3600*1000))
-26_KB := $$((26*1024))
-1_MILLION := 1000000
+30DAYS := $$((30*24*3600*1000))
+10s_in_micros := $$((10*1000*1000))
+26KB := $$((26*1000))
+1MB := $$((1000*1000))
+100K := 100000
+1M := 1000000
 
 #   https://github.com/rabbitmq/tgir/issues/5#issuecomment-581384417
 #   IDLE MESSAGES:
@@ -28,21 +31,35 @@ netdata_PORT := 19999
 #          @ 26KB
 # ---------------
 #        1.215 TB
-durable_backlog_MACHINE_TYPE := n1-standard-1
-durable_drain_MACHINE_TYPE := n1-standard-1
-durable_workload_MACHINE_TYPE := f1-micro
-durable_rabbitmq_MACHINE_TYPE := n1-highmem-8
+1CPU_4RAM := n1-standard-1
+8CPU_52RAM := n1-highmem-8
+
+durable_backlog_MACHINE_TYPE := $(1CPU_4RAM)
+durable_workload_MACHINE_TYPE := $(1CPU_4RAM)
+durable_rabbitmq_MACHINE_TYPE := $(8CPU_52RAM)
 durable_rabbitmq_DISK_SIZE := 2000GB
-durable_QUEUES := 75
+durable_QUEUES := 450
 durable_PUBLISHERS := $(durable_QUEUES)
 durable_PUBLISH_EVERY := 30
 durable_CONSUMERS := $(durable_QUEUES)
 durable_CONSUMER_PREFETCH := 50
-durable_QUEUE_EXPIRES := $(30_DAYS)
-durable_MESSAGE_TTL := $(30_DAYS)
-durable_MESSAGE_SIZE := $(26_KB)
+durable_QUEUE_EXPIRES := $(30DAYS)
+durable_MESSAGE_TTL := $(30DAYS)
+durable_MESSAGE_SIZE := $(26KB)
 durable_BACKLOG_QUEUES := 50
-durable_MAX_MESSAGES_PER_BACKLOG_QUEUE := $(1_MILLION)
+durable_MAX_MESSAGES_PER_BACKLOG_QUEUE := $(1M)
+
+lazy_workload_MACHINE_TYPE := $(1CPU_4RAM)
+lazy_rabbitmq_MACHINE_TYPE := $(1CPU_4RAM)
+lazy_rabbitmq_DISK_SIZE := 10GB
+lazy_QUEUES := 1
+lazy_PUBLISHERS := $(lazy_QUEUES)
+lazy_PUBLISH_RATE_1 := 1:1000
+lazy_PUBLISH_RATE_2 := 0:10
+lazy_MESSAGE_SIZE := $(1MB)
+lazy_CONSUMERS := $(lazy_QUEUES)
+lazy_CONSUMER_LATENCY := $(10s_in_micros)
+lazy_MAX_MESSAGES_PER_QUEUE := $(100K)
 
 # You may want to overwrite this with your GCP project, e.g. export GCP_PROJECT=my-project-name
 GCP_PROJECT ?= cf-rabbitmq-core
@@ -151,107 +168,87 @@ docker container inspect --format '{{.State.Status}}' netdata \
 endef
 netdata-%: $(GCLOUD) firewall-allow-netdata ## Start netdata & open dashboard
 	$(GCLOUD) compute ssh $(NAMESPACE)-$* -- "$(NETDATA_CONTAINER)" \
-	&& open http://"$$($(EXTERNAL_IP))":$(netdata_PORT)
+	&& open http://$(shell $(EXTERNAL_IP)):$(netdata_PORT)
 
 define durable_PERFTEST_DEFAULTS
---container-image=$(DOCKER_RABBITMQ_PERFTEST_IMAGE) \
---container-arg="--auto-delete" \
---container-arg="false" \
---container-arg="--exchange" \
---container-arg="topic" \
---container-arg="--flag" \
---container-arg="persistent" \
---container-arg="--size" \
---container-arg="$($*_MESSAGE_SIZE)" \
---container-arg="--type" \
---container-arg="topic" \
---container-arg="--uri" \
---container-arg="amqp://guest:guest@$(NAMESPACE)-rabbitmq-$*.c.$(GCP_PROJECT).internal:$(amqp_PORT)/%2f"
 endef
 
 define durable_backlog_PERFTEST_CONFIG
---container-arg="--confirm" \
---container-arg="1" \
---container-arg="--confirm-timeout" \
---container-arg="120" \
---container-arg="--consumers" \
---container-arg="0" \
---container-arg="--heartbeat-sender-threads" \
---container-arg="10" \
---container-arg="--nio-threads" \
---container-arg="10" \
---container-arg="--nio-thread-pool" \
---container-arg="20" \
---container-arg="--producers" \
---container-arg="$(durable_BACKLOG_QUEUES)" \
---container-arg="--queue-args" \
---container-arg="x-max-length=$(durable_MAX_MESSAGES_PER_BACKLOG_QUEUE)" \
---container-arg="--queue-pattern" \
---container-arg="backlog%d" \
---container-arg="--queue-pattern-from" \
---container-arg="1" \
---container-arg="--queue-pattern-to" \
---container-arg="$(durable_BACKLOG_QUEUES)"
+--container-image=$(DOCKER_RABBITMQ_PERFTEST_IMAGE) \
+--container-arg="--auto-delete" --container-arg="false" \
+--container-arg="--confirm" --container-arg="1" \
+--container-arg="--confirm-timeout" --container-arg="120" \
+--container-arg="--consumers" --container-arg="0" \
+--container-arg="--exchange" --container-arg="topic" \
+--container-arg="--flag" --container-arg="persistent" \
+--container-arg="--heartbeat-sender-threads" --container-arg="10" \
+--container-arg="--nio-threads" --container-arg="10" \
+--container-arg="--nio-thread-pool" --container-arg="20" \
+--container-arg="--producers" --container-arg="$(durable_BACKLOG_QUEUES)" \
+--container-arg="--queue-args" --container-arg="x-max-length=$(durable_MAX_MESSAGES_PER_BACKLOG_QUEUE)" \
+--container-arg="--queue-pattern" --container-arg="backlog%d" \
+--container-arg="--queue-pattern-from" --container-arg="1" \
+--container-arg="--queue-pattern-to" --container-arg="$(durable_BACKLOG_QUEUES)" \
+--container-arg="--size" --container-arg="$(durable_MESSAGE_SIZE)" \
+--container-arg="--type" --container-arg="topic" \
+--container-arg="--uri" --container-arg="amqp://guest:guest@$(NAMESPACE)-rabbitmq-durable.c.$(GCP_PROJECT).internal:$(amqp_PORT)/%2f"
 endef
 backlog-%: $(GCLOUD) ## Simulate message backlog
 	time $(GCLOUD) compute instances create-with-container $(NAMESPACE)-$@ \
 	  $(GCP_COS_CONTAINER_DEFAULTS) \
 	  --machine-type=$($*_backlog_MACHINE_TYPE) \
 	  $($*_backlog_PERFTEST_CONFIG) \
-	  $($*_PERFTEST_DEFAULTS) \
 	|| time $(GCLOUD) compute instances update-container $(NAMESPACE)-$@ \
-	  $($*_backlog_PERFTEST_CONFIG) \
-	  $($*_PERFTEST_DEFAULTS)
-
-define durable_drain_PERFTEST_CONFIG
---container-arg="--autoack" \
---container-arg="--consumers" \
---container-arg="$(durable_BACKLOG_QUEUES)" \
---container-arg="--producers" \
---container-arg="0" \
---container-arg="--queue-args" \
---container-arg="x-max-length=$(durable_MAX_MESSAGES_PER_BACKLOG_QUEUE)" \
---container-arg="--queue-pattern" \
---container-arg="backlog%d" \
---container-arg="--queue-pattern-from" \
---container-arg="1" \
---container-arg="--queue-pattern-to" \
---container-arg="$(durable_BACKLOG_QUEUES)"
-endef
-drain-%: $(GCLOUD) ## Simulate message drain
-	time $(GCLOUD) compute instances create-with-container $(NAMESPACE)-$@ \
-	  $(GCP_COS_CONTAINER_DEFAULTS) \
-	  --machine-type=$($*_drain_MACHINE_TYPE) \
-	  $($*_drain_PERFTEST_CONFIG) \
-	  $(RABBITMQ_PERFTEST_DEFAULTS) \
-	|| time $(GCLOUD) compute instances update-container $(NAMESPACE)-$@ \
-	  $($*_drain_PERFTEST_CONFIG) \
-	  $($*_PERFTEST_DEFAULTS)
+	  $($*_backlog_PERFTEST_CONFIG)
 
 define durable_workload_PERFTEST_CONFIG
---container-arg="--consumers" \
---container-arg="$(durable_CONSUMERS)" \
---container-arg="--producers" \
---container-arg="$(durable_PUBLISHERS)" \
---container-arg="--publishing-interval" \
---container-arg="$(durable_PUBLISH_EVERY)" \
---container-arg="--qos" \
---container-arg="$(durable_CONSUMER_PREFETCH)" \
---container-arg="--queue-args" \
---container-arg="x-expires=$(durable_QUEUE_EXPIRES),x-message-ttl=$(durable_MESSAGE_TTL)" \
---container-arg="--queue-pattern" \
---container-arg="q%d" \
---container-arg="--queue-pattern-from" \
---container-arg="1" \
---container-arg="--queue-pattern-to" \
---container-arg="$(durable_QUEUES)"
+--container-image=$(DOCKER_RABBITMQ_PERFTEST_IMAGE) \
+--container-arg="--auto-delete" --container-arg="false" \
+--container-arg="--confirm" --container-arg="1" \
+--container-arg="--confirm-timeout" --container-arg="120" \
+--container-arg="--consumers" --container-arg="$(durable_CONSUMERS)" \
+--container-arg="--exchange" --container-arg="topic" \
+--container-arg="--flag" --container-arg="persistent" \
+--container-arg="--heartbeat-sender-threads" --container-arg="10" \
+--container-arg="--nio-threads" --container-arg="10" \
+--container-arg="--nio-thread-pool" --container-arg="20" \
+--container-arg="--producers" --container-arg="$(durable_PUBLISHERS)" \
+--container-arg="--publishing-interval" --container-arg="$(durable_PUBLISH_EVERY)" \
+--container-arg="--qos" --container-arg="$(durable_CONSUMER_PREFETCH)" \
+--container-arg="--queue-args" --container-arg="x-expires=$(durable_QUEUE_EXPIRES),x-message-ttl=$(durable_MESSAGE_TTL)" \
+--container-arg="--queue-pattern" --container-arg="q%d" \
+--container-arg="--queue-pattern-from" --container-arg="1" \
+--container-arg="--queue-pattern-to" --container-arg="$(durable_QUEUES)" \
+--container-arg="--size" --container-arg="$(durable_MESSAGE_SIZE)" \
+--container-arg="--type" --container-arg="topic" \
+--container-arg="--uri" --container-arg="amqp://guest:guest@$(NAMESPACE)-rabbitmq-durable.c.$(GCP_PROJECT).internal:$(amqp_PORT)/%2f"
+endef
+define lazy_workload_PERFTEST_CONFIG
+--container-image=$(DOCKER_RABBITMQ_PERFTEST_IMAGE) \
+--container-arg="--auto-delete" --container-arg="false" \
+--container-arg="--confirm" --container-arg="1" \
+--container-arg="--confirm-timeout" --container-arg="120" \
+--container-arg="--consumers" --container-arg="$(lazy_CONSUMERS)" \
+--container-arg="--consumer-latency" --container-arg="$(lazy_CONSUMER_LATENCY)" \
+--container-arg="--flag" --container-arg="persistent" \
+--container-arg="--heartbeat-sender-threads" --container-arg="10" \
+--container-arg="--nio-threads" --container-arg="10" \
+--container-arg="--nio-thread-pool" --container-arg="20" \
+--container-arg="--producers" --container-arg="$(lazy_PUBLISHERS)" \
+--container-arg="--qos" --container-arg="1" \
+--container-arg="--queue-args" --container-arg="x-queue-mode=lazy,x-max-length=$(lazy_MAX_MESSAGES_PER_QUEUE)" \
+--container-arg="--queue-pattern" --container-arg="q%d" \
+--container-arg="--queue-pattern-from" --container-arg="1" \
+--container-arg="--queue-pattern-to" --container-arg="$(lazy_QUEUES)" \
+--container-arg="--size" --container-arg="$(lazy_MESSAGE_SIZE)" \
+--container-arg="--uri" --container-arg="amqp://guest:guest@$(NAMESPACE)-rabbitmq-lazy.c.$(GCP_PROJECT).internal:$(amqp_PORT)/%2f" \
+--container-arg="--variable-rate" --container-arg="$(lazy_PUBLISH_RATE_1)" \
+--container-arg="--variable-rate" --container-arg="$(lazy_PUBLISH_RATE_2)"
 endef
 workload-%: $(GCLOUD) ## Simulate workload
 	time $(GCLOUD) compute instances create-with-container $(NAMESPACE)-$@ \
 	  $(GCP_COS_CONTAINER_DEFAULTS) \
 	  --machine-type=$($*_workload_MACHINE_TYPE) \
 	  $($*_workload_PERFTEST_CONFIG) \
-	  $(RABBITMQ_PERFTEST_DEFAULTS)
 	|| time $(GCLOUD) compute instances update-container $(NAMESPACE)-$@ \
-	  $($*_workload_PERFTEST_CONFIG) \
-	  $(RABBITMQ_PERFTEST_DEFAULTS)
+	  $($*_workload_PERFTEST_CONFIG)
