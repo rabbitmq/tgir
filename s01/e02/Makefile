@@ -94,13 +94,13 @@ prometheus-%: $(GCLOUD) firewall-allow-prometheus ## Open RabbitMQ Prometheus
 	open http://$(shell $(EXTERNAL_IP)):$(prometheus_PORT)/metrics
 
 firewall-allow-%: $(GCLOUD)
-	$(GCLOUD) compute firewall-rules describe $(USER)-$(HOSTNAME)-allow-$* \
-	|| $(GCLOUD) compute firewall-rules create $(USER)-$(HOSTNAME)-allow-$* \
+	$(GCLOUD) compute firewall-rules describe $(USER)-$(shell hostname)-allow-$* \
+	|| $(GCLOUD) compute firewall-rules create $(USER)-$(shell hostname)-allow-$* \
 		--allow=TCP:$($*_PORT) --source-ranges=$(shell curl -s https://api.ipify.org)/32
 
 firewall-deny-%: $(GCLOUD)
-	$(GCLOUD) compute firewall-rules describe $(USER)-$(HOSTNAME)-allow-$* \
-	&& $(GCLOUD) compute firewall-rules delete $(USER)-$(HOSTNAME)-allow-$*
+	$(GCLOUD) compute firewall-rules describe $(USER)-$(shell hostname)-allow-$* \
+	&& $(GCLOUD) compute firewall-rules delete $(USER)-$(shell hostname)-allow-$*
 
 delete-%: $(GCLOUD) ## Delete instance
 	time $(GCLOUD) compute instances delete $(NAMESPACE)-$*
