@@ -88,10 +88,10 @@ $(GCLOUD) compute instances describe $(NAMESPACE)-$* \
 endef
 
 management-%: $(GCLOUD) firewall-allow-management ## Open RabbitMQ Management
-	open http://"$$($(EXTERNAL_IP))":$(management_PORT)
+	open http://$(shell $(EXTERNAL_IP)):$(management_PORT)
 
 prometheus-%: $(GCLOUD) firewall-allow-prometheus ## Open RabbitMQ Prometheus
-	open http://"$$($(EXTERNAL_IP))":$(prometheus_PORT)/metrics
+	open http://$(shell $(EXTERNAL_IP)):$(prometheus_PORT)/metrics
 
 firewall-allow-%: $(GCLOUD)
 	$(GCLOUD) compute firewall-rules describe $(USER)-allow-$* \
