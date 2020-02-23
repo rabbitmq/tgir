@@ -71,7 +71,7 @@ help:
 	| sort
 
 define MAKE_TARGETS
-  awk -F: '/^[^\.%\t\_][0-9a-zA-Z\._\-]*:+.*$$/ { printf "%s\n", $$1 }' $(MAKEFILE_LIST)
+  awk -F: '/^[^\.%\t\_][0-9a-zA-Z\._\-\%]*:+.*$$/ { printf "%s\n", $$1 }' $(MAKEFILE_LIST)
 endef
 define BASH_AUTOCOMPLETE
   complete -W \"$$($(MAKE_TARGETS) | sort | uniq)\" make gmake m
