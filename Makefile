@@ -19,10 +19,10 @@ $(DOCKER) $(COMPOSE):
 else
 DOCKER ?= /usr/bin/docker
 $(DOCKER):
-	$(error Please install docker)
+	$(error Please install docker: https://docs.docker.com/install/linux/docker-ce/ubuntu/)
 COMPOSE ?= $(DOCKER)-compose
 $(COMPOSE):
-	$(error Please install docker-compose)
+	$(error Please install docker-compose: https://docs.docker.com/compose/install/)
 endif
 
 ifeq ($(PLATFORM),Darwin)
@@ -47,6 +47,17 @@ else
 OPEN := xdg-open
 endif
 
+ifeq ($(PLATFORM),Darwin)
+GCLOUD := /usr/local/bin/gcloud
+$(GCLOUD):
+	brew cask install google-cloud-sdk
+else
+GCLOUD ?= /usr/bin/gcloud
+$(GCLOUD):
+	$(error Please install gcloud: https://cloud.google.com/sdk/docs/downloads-apt-get)
+endif
+
+
 
 
 ### TARGETS ###
@@ -56,7 +67,7 @@ endif
 
 .PHONY: help
 help:
-	@awk -F": |##" '/^[^\.][0-9a-zA-Z\._\-]+:+.+##.+$$/ { printf "\033[36m%-29s\033[0m %s\n", $$1, $$3 }' $(MAKEFILE_LIST) \
+	@awk -F": |##" '/^[^\.][0-9a-zA-Z\._\-\%]+:+.+##.+$$/ { printf "\033[36m%-26s\033[0m %s\n", $$1, $$3 }' $(MAKEFILE_LIST) \
 	| sort
 
 define MAKE_TARGETS
