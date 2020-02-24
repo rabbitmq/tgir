@@ -195,7 +195,7 @@ define durable_backlog_PERFTEST_CONFIG
 --container-arg="--nio-threads" --container-arg="10" \
 --container-arg="--nio-thread-pool" --container-arg="20" \
 --container-arg="--producers" --container-arg="$(durable_BACKLOG_QUEUES)" \
---container-arg="--queue-args" --container-arg="x-max-length=$(durable_MAX_MESSAGES_PER_BACKLOG_QUEUE)" \
+--container-arg="--queue-args" --container-arg="x-queue-mode=lazy,x-max-length=$(durable_MAX_MESSAGES_PER_BACKLOG_QUEUE),x-expires=$(durable_QUEUE_EXPIRES),x-message-ttl=$(durable_MESSAGE_TTL)" \
 --container-arg="--queue-pattern" --container-arg="backlog%d" \
 --container-arg="--queue-pattern-from" --container-arg="1" \
 --container-arg="--queue-pattern-to" --container-arg="$(durable_BACKLOG_QUEUES)" \
@@ -225,7 +225,7 @@ define durable_workload_PERFTEST_CONFIG
 --container-arg="--producers" --container-arg="$(durable_PUBLISHERS)" \
 --container-arg="--publishing-interval" --container-arg="$(durable_PUBLISH_EVERY)" \
 --container-arg="--qos" --container-arg="$(durable_CONSUMER_PREFETCH)" \
---container-arg="--queue-args" --container-arg="x-expires=$(durable_QUEUE_EXPIRES),x-message-ttl=$(durable_MESSAGE_TTL)" \
+--container-arg="--queue-args" --container-arg="x-queue-mode=lazy,x-expires=$(durable_QUEUE_EXPIRES),x-message-ttl=$(durable_MESSAGE_TTL)" \
 --container-arg="--queue-pattern" --container-arg="q%d" \
 --container-arg="--queue-pattern-from" --container-arg="1" \
 --container-arg="--queue-pattern-to" --container-arg="$(durable_QUEUES)" \
