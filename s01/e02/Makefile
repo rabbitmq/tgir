@@ -31,12 +31,16 @@ netdata_PORT := 19999
 #          @ 26KB
 # ---------------
 #        1.215 TB
+
+# https://cloud.google.com/compute/pricing
 1CPU_4RAM := n1-standard-1
 8CPU_52RAM := n1-highmem-8
+16CPU_104RAM := n1-highmem-16
 
 durable_backlog_MACHINE_TYPE := $(1CPU_4RAM)
 durable_workload_MACHINE_TYPE := $(1CPU_4RAM)
-durable_rabbitmq_MACHINE_TYPE := $(8CPU_52RAM)
+durable_rabbitmq_MACHINE_TYPE := $(16CPU_104RAM)
+durable_rabbitmq_MEMORY_HIGH_WATERMARK := 0.8
 durable_rabbitmq_DISK_SIZE := 2000GB
 durable_QUEUES := 450
 durable_PUBLISHERS := $(durable_QUEUES)
@@ -51,7 +55,8 @@ durable_MAX_MESSAGES_PER_BACKLOG_QUEUE := $(1M)
 
 lazy_workload_MACHINE_TYPE := $(1CPU_4RAM)
 lazy_rabbitmq_MACHINE_TYPE := $(1CPU_4RAM)
-lazy_rabbitmq_DISK_SIZE := 10GB
+lazy_rabbitmq_MEMORY_HIGH_WATERMARK := 0.8
+lazy_rabbitmq_DISK_SIZE := 200GB
 lazy_QUEUES := 1
 lazy_PUBLISHERS := $(lazy_QUEUES)
 lazy_PUBLISH_RATE_1 := 1:1000
@@ -97,6 +102,11 @@ rabbitmq-%: $(GCLOUD) ## Create RabbitMQ server
 	  --create-disk=name=$(NAMESPACE)-$@-persistent,size=$($*_rabbitmq_DISK_SIZE),type=pd-ssd,auto-delete=yes \
 	  --container-mount-disk=name=$(NAMESPACE)-$@-persistent,mount-path=/var/lib/rabbitmq \
 	  --container-env RABBITMQ_ERLANG_COOKIE=$(NAMESPACE) \
+	  --container-env RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS="-rabbit vm_memory_high_watermark $($*_rabbitmq_MEMORY_HIGH_WATERMARK)" \
+	  --container-image=$(DOCKER_RABBITMQ_IMAGE) \
+	|| time $(GCLOUD) compute instances update-container $(NAMESPACE)-$@ \
+	  --container-env RABBITMQ_ERLANG_COOKIE=$(NAMESPACE) \
+	  --container-env RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS="-rabbit vm_memory_high_watermark $($*_rabbitmq_MEMORY_HIGH_WATERMARK)" \
 	  --container-image=$(DOCKER_RABBITMQ_IMAGE)
 
 define EXTERNAL_IP
