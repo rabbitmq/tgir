@@ -180,9 +180,6 @@ netdata-%: $(GCLOUD) firewall-allow-netdata ## Start netdata & open dashboard
 	$(GCLOUD) compute ssh $(NAMESPACE)-$* -- "$(NETDATA_CONTAINER)" \
 	&& open http://$(shell $(EXTERNAL_IP)):$(netdata_PORT)
 
-define durable_PERFTEST_DEFAULTS
-endef
-
 define durable_backlog_PERFTEST_CONFIG
 --container-image=$(DOCKER_RABBITMQ_PERFTEST_IMAGE) \
 --container-arg="--auto-delete" --container-arg="false" \
