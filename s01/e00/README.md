@@ -1,4 +1,4 @@
-# [TGIR S01E00: Understand RabbitMQ via the new metrics system](https://content.pivotal.io/webinars/dec-12-understand-rabbitmq-for-developers-and-operators-webinar?utm_campaign=rabbitmq-devops-erlang_q419&utm_source=github&utm_medium=social)
+# [TGIR S01E00: Understand RabbitMQ - The New Metrics System](https://content.pivotal.io/webinars/dec-12-understand-rabbitmq-for-developers-and-operators-webinar?utm_campaign=rabbitmq-devops-erlang_q419&utm_source=github&utm_medium=social)
 
 <a href="https://content.pivotal.io/webinars/dec-12-understand-rabbitmq-for-developers-and-operators-webinar?utm_campaign=rabbitmq-devops-erlang_q419&utm_source=github&utm_medium=social" target="_blank"><img src="video.png" border="50" /></a>
 
