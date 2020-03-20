@@ -74,7 +74,7 @@ One RabbitMQ 3.7 node with `rabbitmq-management`:
 ```sh
 make server
 time /usr/local/bin/gcloud compute instances create-with-container tgir-s01e01-gerhard-rmq1-server \
-  --public-dns --boot-disk-type=pd-ssd --labels=namespace=tgir-s01e01-gerhard --container-stdin --container-tty \
+  --boot-disk-type=pd-ssd --labels=namespace=tgir-s01e01-gerhard --container-stdin --container-tty \
   --machine-type=n1-standard-8 \
   --create-disk=name=tgir-s01e01-gerhard-rmq1-server-persistent,size=200GB,type=pd-ssd,auto-delete=yes \
   --container-mount-disk=name=tgir-s01e01-gerhard-rmq1-server-persistent,mount-path=/var/lib/rabbitmq \
@@ -87,7 +87,7 @@ A production workload using PerfTest:
 ```sh
 make workload
 /usr/local/bin/gcloud compute instances create-with-container tgir-s01e01-gerhard-rmq1-workload \
-  --public-dns --boot-disk-type=pd-ssd --labels=namespace=tgir-s01e01-gerhard --container-stdin --container-tty \
+  --boot-disk-type=pd-ssd --labels=namespace=tgir-s01e01-gerhard --container-stdin --container-tty \
   --machine-type=n1-highcpu-4 \
   --container-arg="--consumer-latency" \
   --container-arg="5000000" \

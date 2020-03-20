@@ -45,7 +45,6 @@ logs-lifecyle: $(GCLOUD)
 	open "https://console.cloud.google.com/logs/viewer?project=$(GCP_PROJECT)&minLogLevel=0&expandAll=false&limitCustomFacetWidth=true&interval=PT1H&advancedFilter=resource.type%3Dgce_instance%0AlogName%3Dprojects%2F$(GCP_PROJECT)%2Flogs%2Fcos_containers%0AjsonPayload.message:%20(%22starting%20rabbitmq%22%20OR%20%22started%22%20OR%20%22stopping%22%20OR%20%22stopped%22%20AND%20NOT%20%22supervisor%22)"
 
 define GCP_COS_CONTAINER_DEFAULTS
---public-dns \
 --boot-disk-type=pd-ssd \
 --labels=namespace=$(NAMESPACE) \
 --container-stdin \
