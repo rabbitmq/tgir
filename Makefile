@@ -9,6 +9,7 @@ BOLD := \033[1m
 NORMAL := \033[0m
 
 
+
 ### DEPS ###
 #
 ifeq ($(PLATFORM),Darwin)
@@ -99,39 +100,47 @@ readme: $(DOCKER)
 
 # https://www.bugcodemaster.com/article/convert-video-animated-gif-using-ffmpeg
 # https://trac.ffmpeg.org/wiki/Scaling
-#
-# Unused, keeping here for reference
-GITHUB_WIDTH = scale='min(866,iw):-1',
-GIF_SCALE =
 .PHONY: gif
 gif: $(FFMPEG)
-ifndef F
-	$(error F variable must reference a valid mp4 file path)
+ifndef MP4
+	$(error MP4 variable must reference a valid mov file path)
 endif
-	$(FFMPEG) -i $(F) \
+	$(FFMPEG) -i $(MP4) \
 	  -hide_banner \
-	  -vf "$(GIF_SCALE)fps=1" \
-	  $(subst .mp4,.gif,$(F))
+	  -vf "fps=1" \
+	  $(subst .mp4,-1fps.gif,$(MP4))
 
 .env:
 	ln -sf ../../.env .env
 
+FPS ?= 24
+FFMPEG_VF = -vf "fps=$(FPS)
+MP4_APPEND = -$(FPS)fps
+# Scale for videos, use in SCALE=
+1080p = scale='min(1920,iw)':'min(1080,ih)'
+720p = scale='min(1280,iw)':'min(720,ih)'
+ifneq ($($(SCALE)),)
+FFMPEG_VF := $(FFMPEG_VF),$($(SCALE))
+MP4_APPEND := -$(SCALE)$(MP4_APPEND)
+endif
+FFMPEG_VF := $(FFMPEG_VF)"
+
 .PHONY: mp4
 mp4: $(FFMPEG)
-ifndef F
-	$(error F variable must reference a valid mov file path)
+ifndef MOV
+	$(error MOV variable must reference a valid mov file path)
 endif
-	$(FFMPEG) -i $(F) \
-	  -vcodec h264 \
-	  $(subst .mov,.mp4,$(F))
+	$(FFMPEG) -i $(MOV) \
+	  -vcodec h264 $(FFMPEG_VF) \
+	  $(subst .mov,$(MP4_APPEND).mp4,$(MOV))
 
 .PHONY: mp4-concat
 mp4-concat: $(FFMPEG)
-ifndef D
-	$(error D variable must reference the dir where multiple mp4 files are stored)
+ifndef DIR
+	$(error DIR variable must reference the dir where multiple mp4 files are stored)
 endif
 	$(FFMPEG) -f concat \
 	-safe 0 \
-	-i <(for f in $(D)/*.mp4; do echo "file '$$f'"; done) \
+	-i <(for f in $(DIR)/*.mp4; do echo "file '$$f'"; done) \
 	-c copy \
-	$(D)/concat.mp4
+	$(DIR)/concat.mp4
