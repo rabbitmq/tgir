@@ -113,7 +113,7 @@ endif
 .env:
 	ln -sf ../../.env .env
 
-FPS ?= 24
+FPS ?= 30
 FFMPEG_VF = -vf "fps=$(FPS)
 MP4_APPEND = -$(FPS)fps
 # Scale for videos, use in SCALE=
