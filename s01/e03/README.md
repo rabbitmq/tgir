@@ -7,8 +7,7 @@
 <a href="https://www.youtube.com/watch?v=EWU7WCqD_YA" target="_blank"><img src="video.jpg" border="50" /></a>
 
 This is the first part of a multi-part series on how to contribute to RabbitMQ.
-Our contribution will be to verify that a fix is ready to ship in RabbitMQ v3.8.4.
-
+Our contribution will be to verify that a fix is ready to ship in the next RabbitMQ v3.8.4 patch release.
 
 We will start by getting a local development copy of RabbitMQ up and running.
 Next, we will learn about different ways of running RabbitMQ, and how to use the local CLIs.
