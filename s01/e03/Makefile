@@ -1,6 +1,7 @@
 include ../../Makefile
 
-JOBS_IN_PARALLEL ?= 6
+JOBS_IN_PARALLEL ?= 4
+DOCKER_IMAGE_TAG := 3.9-$(shell date -u +'%Y%m%d')
 
 ifeq ($(PLATFORM),Darwin)
 ERL ?= /usr/local/bin/erl
@@ -27,7 +28,7 @@ deps: | $(ERL) $(MIX) rabbitmq-public-umbrella ## Resolve all dependencies
 
 rabbitmq-public-umbrella: ## Setup a local copy for developing RabbitMQ
 	git clone https://github.com/rabbitmq/rabbitmq-public-umbrella.git $@
-	&& time make -C $@ up -j $(JOBS_IN_PARALLEL)
+	time make -C $@ up
 
 .PHONY: which-release-series
 which-release-series: | deps ## Show which release series we are currently on
@@ -37,13 +38,13 @@ which-release-series: | deps ## Show which release series we are currently on
 switch-to-3.8.x: | deps ## Switch local copy to v3.8.x
 	cd rabbitmq-public-umbrella \
 	&& git checkout v3.8.x \
-	&& time make up -j $(JOBS_IN_PARALLEL) BRANCH=v3.8.x
+	&& time make up BRANCH=v3.8.x
 
 .PHONY: switch-to-3.9.x
 switch-to-3.9.x: | deps ## Switch local copy to v3.9.x
 	cd rabbitmq-public-umbrella \
 	&& git checkout master \
-	&& time make up -j $(JOBS_IN_PARALLEL) BRANCH=master
+	&& time make up BRANCH=master
 
 .PHONY: dev-server
 dev-server: | deps ## Run dev rabbitmq-server
@@ -64,4 +65,8 @@ checkout-pr2279: | switch-to-3.9.x ## Checkout the correct source for rabbitmq-s
 
 .PHONY: docker-image
 docker-image: | deps ## Build & publish a Docker image of a custom RabbitMQ build
-	make -C rabbitmq-public-umbrella/deps/rabbitmq_server_release docker-image PROJECT_VERSION=3.9-$(shell date -u +'%Y%m%d')
+	make -C rabbitmq-public-umbrella/deps/rabbitmq_server_release docker-image PROJECT_VERSION=$(DOCKER_IMAGE_TAG)
+
+.PHONY: docker-image-run
+docker-image-run: ## Run Docker image of our custom RabbitMQ build
+	docker run -it --rm -p 15673:15672 pivotalrabbitmq/rabbitmq:$(DOCKER_IMAGE_TAG)
