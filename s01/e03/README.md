@@ -60,3 +60,27 @@ switch-to-3.8.x             Switch local copy to v3.8.x
 switch-to-3.9.x             Switch local copy to v3.9.x
 which-release-series        Show which release series we are currently on
 ```
+
+
+## Notes
+
+### SETUP RABBITMQ DEV
+- rabbitmq-public-umbrella
+- What does the master branch represent?
+- And the v3.8.x branch?
+
+### RUN RABBITMQ DEV
+- How to run a local dev copy of RabbitMQ?
+- Interactive shell is available by default
+- Run a local dev copy of RabbitMQ with all plugins enabled and STDOUT debug logging
+- Where to find rabbitmqctl & friends?
+
+### BUILD & TEST CUSTOM RABBITMQ
+- Build a Docker image of rabbitmq-server#2279 & rabbitmq-common#368
+- Close rabbitmq-server#2254
+
+### IN THE NEXT EPISODE...
+- Preview docs & share improvements
+- 1-command RabbitMQ dev env
+- Make code changes, preview & test
+- Multi-repo pull-request process
