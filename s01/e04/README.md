@@ -2,63 +2,60 @@
 
 * Proposed via [rabbitmq/tgir#4](https://github.com/rabbitmq/tgir/issues/4)
 * Hosted by [@gerhardlazu](https://twitter.com/gerhardlazu)
-* Published on: 2020-04-27
+* Published on: 2020-04-30
 
 <a href="https://www.youtube.com/watch?v=TGIRS01E04" target="_blank"><img src="video.jpg" border="50" /></a>
 
-This is the second part of a multi-part series on how to contribute to RabbitMQ.
-Our contribution will be to submit a pull-request across multiple repositories and see it released in the next RabbitMQ patch release.
+This is the second part on how to contribute to RabbitMQ.
+We show you how to make your first RabbitMQ contribution in 3 simple steps:
 
-To get the best out of this episode, I encourage you to follow along and, ideally, submit a pull request to RabbitMQ.
-All commands are available as make targets in this episode's directory.
+1. Add a new Erlang/OTP 22 feature to [rabbitmq-prometheus](https://github.com/rabbitmq/rabbitmq-prometheus) in a few lines of Erlang
+2. Update [Erlang-Distribution Grafana dashboard](https://grafana.com/grafana/dashboards/11352)
+3. Contribute your first pull request to RabbitMQ!
 
+We show how to link multiple contributions together, across multiple repositories:
+- start with Erlang/OTP
+- continue with prometheus.erl & rabbitmq-prometheus
+- finish off with the Erlang-Distribution Grafana dashboard
 
-## Timeline
-
-- [00:00:00](https://www.youtube.com/watch?v=TGIRS01E04&t=0s) - Today's topic
-
-
-## Links
-
-
-
-
-## Make targets
+The goal of this episode is to have you contribute this change 😉
 
 
 
+## TIMELINE
 
-## Notes
+- In today's episode... ([00:00](https://www.youtube.com/watch?v=TGIRS01E04&t=0s))
 
 ### START WITH AN ISSUE
-- New or existing?
-- Why is it worth doing?
+- Is this a new or an existing issue?
+- Capture why it is worth doing
+- Wait for a reply if unsure, continue otherwise
 
 ### CONTINUE WITH A PULL REQUEST (PR)
-- Explore first
-- Write a failing test - integration tests are not a scam
-- Make it pass locally
+- Explore & write a failing test
 - Submit little & early as WIP
-- Ensure checks stay green
-- Why is the discussion the most valuable aspect?
-- Keep history clean by rebasing
-- Link to a dependent PR, in a dependency
+- Link to relevant issues/PRs
+- Make it pass locally
+- Make it pass remotely
+- Keep history clean
+- Run it locally & capture observations
 - Change the PR state to done
 
-### A RABBITMQ TEAM MEMBER WILL HELP
-- Who to ask for feedback?
-- How to review?
-- Assign a milestone to the issue
-- Merge & wait for dev build
-- Where to find automated dev builds?
-- Where to find the automated release summary?
-- How to update release notes
+### HELP A RABBITMQ TEAM MEMBER MERGE THE PR
+- Who to ask for a review? or Who is the code owner?
+- Assign a milestone **to the issue**
+- Merge when checks are green
+- Know which version of RabbitMQ to expect it in
 
-### TEST YOUR CHANGE IN A PRE-RELEASE
-- How to download a pre-release?
-- How to use a pre-release in the official RabbitMQ Docker image?
-- Provide pre-release feedback on the PR
 
-### IN THE NEXT EPISODE...
-- Preview docs & share improvements
-- One-command RabbitMQ dev env
+
+## LINKS
+
+- [erlang/otp #2270](https://github.com/erlang/otp/pull/2270) - [Which releases?](https://github.com/erlang/otp/pull/2270/commits/302840129567426fd882484606bdc27ed3087eca)
+- [prometheus.erl #94](https://github.com/deadtrickster/prometheus.erl/pull/94)
+- [rabbitmq/rabbitmq-prometheus #39](https://github.com/rabbitmq/rabbitmq-prometheus/issues/39)
+- [Erlang-Distribution Grafana Dashboard](https://grafana.com/grafana/dashboards/11352)
+- [Erlang.mk - Common Test](https://erlang.mk/guide/ct.html)
+- [RabbitMQ Runtime Tuning - Inter-node Communication Buffer Size](https://www.rabbitmq.com/runtime.html#distribution-buffer)
+- [Erlang +zdbbl](https://erlang.org/doc/man/erl.html#+zdbbl)
+- [RabbitMQ - All release notes](https://github.com/rabbitmq/rabbitmq-website/tree/live/site/release-notes)
