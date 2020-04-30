@@ -4,48 +4,34 @@
 * Hosted by [@gerhardlazu](https://twitter.com/gerhardlazu)
 * Published on: 2020-04-30
 
-<a href="https://www.youtube.com/watch?v=TGIRS01E04" target="_blank"><img src="video.jpg" border="50" /></a>
+<a href="https://www.youtube.com/watch?v=Tpn5g-k6vvc" target="_blank"><img src="video.jpg" border="50" /></a>
 
 This is the second part on how to contribute to RabbitMQ.
-We show you how to make your first RabbitMQ contribution in 3 simple steps:
 
-1. Add a new Erlang/OTP 22 feature to [rabbitmq-prometheus](https://github.com/rabbitmq/rabbitmq-prometheus) in a few lines of Erlang
-2. Update [Erlang-Distribution Grafana dashboard](https://grafana.com/grafana/dashboards/11352)
-3. Contribute your first pull request to RabbitMQ!
+See how you can contribute a new Erlang/OTP 22 feature to RabbitMQ 3.8 in these three simple steps:
 
-We show how to link multiple contributions together, across multiple repositories:
-- start with Erlang/OTP
-- continue with prometheus.erl & rabbitmq-prometheus
-- finish off with the Erlang-Distribution Grafana dashboard
+1. Add a few lines of code to [rabbitmq-prometheus](https://github.com/rabbitmq/rabbitmq-prometheus) plugin
+2. Update the [Erlang-Distribution](https://grafana.com/grafana/dashboards/11352) Grafana dashboard
+3. Open a pull request 🙌🏻
 
-The goal of this episode is to have you contribute this change 😉
+The goal of this episode is for **you** to contribute this change 😉
+
+Notes and links at https://github.com/rabbitmq/tgir/tree/S01E04/s01/e04
 
 
 
 ## TIMELINE
 
-- In today's episode... ([00:00](https://www.youtube.com/watch?v=TGIRS01E04&t=0s))
-
-### START WITH AN ISSUE
-- Is this a new or an existing issue?
-- Capture why it is worth doing
-- Wait for a reply if unsure, continue otherwise
-
-### CONTINUE WITH A PULL REQUEST (PR)
-- Explore & write a failing test
-- Submit little & early as WIP
-- Link to relevant issues/PRs
-- Make it pass locally
-- Make it pass remotely
-- Keep history clean
-- Run it locally & capture observations
-- Change the PR state to done
-
-### HELP A RABBITMQ TEAM MEMBER MERGE THE PR
-- Who to ask for a review? or Who is the code owner?
-- Assign a milestone **to the issue**
-- Merge when checks are green
-- Know which version of RabbitMQ to expect it in
+- This is what you will be contributing, and why (00:00)
+- All contributions start with an issue (05:20)
+- Start your contribution by writing a failing test (08:19)
+- Make the test pass locally (12:19)
+- Submit your contribution early as a draft pull-request (13:24)
+- Run everything locally & capture observations (15:31)
+- Mark the pull-request as ready for review (27:39)
+- How can you help us accept contributions promptly (28:00)
+- How do you know which version of RabbitMQ to expect a contribution in? (30:00)
+- Clean state on your local host (31:38)
 
 
 
