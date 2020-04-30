@@ -4,7 +4,7 @@
 * Hosted by [@gerhardlazu](https://twitter.com/gerhardlazu)
 * Published on: 2020-04-30
 
-<a href="https://www.youtube.com/watch?v=Tpn5g-k6vvc" target="_blank"><img src="video.jpg" border="50" /></a>
+<a href="https://www.youtube.com/watch?v=9q-_DLfhfYg" target="_blank"><img src="video.jpg" border="50" /></a>
 
 This is the second part on how to contribute to RabbitMQ.
 
