@@ -105,7 +105,7 @@ gif: $(FFMPEG)
 ifndef MP4
 	$(error MP4 variable must reference a valid mov file path)
 endif
-	$(FFMPEG) -i $(MP4) \
+	time $(FFMPEG) -i $(MP4) \
 	  -hide_banner \
 	  -vf "fps=1" \
 	  $(subst .mp4,-1fps.gif,$(MP4))
@@ -130,7 +130,7 @@ mp4: $(FFMPEG)
 ifndef MOV
 	$(error MOV variable must reference a valid mov file path)
 endif
-	$(FFMPEG) -i $(MOV) \
+	time $(FFMPEG) -i $(MOV) \
 	  -vcodec h264 $(FFMPEG_VF) \
 	  $(subst .mov,$(MP4_APPEND).mp4,$(MOV))
 
