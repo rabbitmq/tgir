@@ -7,3 +7,4 @@
 - [S01E02: Help! RabbitMQ ate my RAM! 2020-02-28](s01/e02/README.md)
 - [S01E03: How to contribute to RabbitMQ? Part 1. 2020-03-27](s01/e03/README.md)
 - [S01E04: How to contribute to RabbitMQ? Part 2. 2020-04-30](s01/e04/README.md)
+- [S01E05: I want to run RabbitMQ on K8S: where do I start? 2020-05-29](s01/e05/README.md)
