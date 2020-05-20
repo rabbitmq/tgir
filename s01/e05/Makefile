@@ -111,9 +111,9 @@ public: $(KUBECONFIG) ## Make simplest RabbitMQ on K8S public
 
 .PHONY: persistent
 persistent: $(KUBECONFIG) | $(YQ) ## Give RabbitMQ on K8S persistent storage
-	$(KUBECTL) apply --filename $(CURDIR)/k8s/pvc.yml
+	$(KUBECTL) apply --filename $(CURDIR)/k8s/persistentvolumeclaim.yml
 	$(YQ) merge $(CURDIR)/k8s/statefulset* | $(KUBECTL) apply --filename -
 
 .PHONY: benchmark
 benchmark: $(KUBECONFIG) ## Benchmark simplest RabbitMQ on K8S
-	$(error TODO)
+	$(KUBECTL) create --filename $(CURDIR)/k8s/job.benchmark.yml
