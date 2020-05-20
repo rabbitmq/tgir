@@ -88,7 +88,7 @@ unalias d 2>/dev/null; alias d=doctl
 unalias m 2>/dev/null; alias m=make
 endef
 export ENV
-env: | $(DOCTL_CONFIG) $(KUBECONFIG_DIR) ## Configure shell env
+env: | $(DOCTL_CONFIG) $(KUBECONFIG_DIR) ## Configure shell env - eval "$(make env)"
 	@echo "$$ENV"
 
 .PHONY: k8s
