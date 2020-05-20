@@ -12,6 +12,7 @@ spec:
       labels:
         app: rabbitmq
     spec:
+      terminationGracePeriodSeconds: 120
       containers:
         - name: rabbitmq
           image: rabbitmq:3.8-management
@@ -27,14 +28,14 @@ spec:
               command:
                 - "rabbitmq-diagnostics"
                 - "ping"
-            initialDelaySeconds: 30
-            periodSeconds: 60
-            timeoutSeconds: 10
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            timeoutSeconds: 15
           readinessProbe:
             exec:
               command:
                 - "rabbitmq-diagnostics"
                 - "check_port_connectivity"
-            initialDelaySeconds: 30
-            periodSeconds: 60
-            timeoutSeconds: 10
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            timeoutSeconds: 15

@@ -26,6 +26,11 @@ KUBECTL := $(lastword $(wildcard /usr/local/Cellar/kubernetes-cli/*/bin/kubectl)
 $(KUBECTL):
 	brew install kubernetes-cli
 
+YQ := /usr/local/bin/yq
+$(YQ):
+	brew install yq
+yq: $(YQ)
+
 $(DOCTL_CONFIG_DIR):
 	mkdir -p $(@)
 
@@ -41,7 +46,7 @@ $(DOCTL_CONFIG): $(DOCTL_CONFIG_DIR) | $(DOCTL)
 $(KUBECONFIG_DIR):
 	mkdir -p $(@)
 
-$(KUBECONFIG): k8s
+$(KUBECONFIG): $(KUBECTL) k8s
 
 .PHONY: env
 define ENV
@@ -80,34 +85,35 @@ k8s-node-sizes: $(DOCTL_CONFIG) ## Show all size options for K8S nodes
 k8s-regions: $(DOCTL_CONFIG) ## Show all regions where K8S can be deployed
 	$(DOCTL) kubernetes options regions
 
-.PHONY: vms
-vms: $(DOCTL_CONFIG) ## Show all running VMs (aka droplets)
+.PHONY: drops
+drops: $(DOCTL_CONFIG) ## Show all Droplets (aka VMs)
 	$(DOCTL) compute droplet list
 
+.PHONY: lbs
+lbs: $(DOCTL_CONFIG) ## Show all Load Balancers
+	$(DOCTL) compute load-balancer list
+
+.PHONY: vols
+vols: $(DOCTL_CONFIG) ## Show all Volumes
+	$(DOCTL) compute volume list
+
 .PHONY: deploy
-deploy: $(DOCTL_CONFIG) $(KUBECONFIG) $(KUBECTL) ## Deploy the simplest RabbitMQ on K8S
+deploy: $(DOCTL_CONFIG) $(KUBECONFIG) ## Deploy the simplest RabbitMQ on K8S
 	$(KUBECTL) apply --filename $(CURDIR)/k8s/statefulset.yml
 
-.PHONY: http
-http: | deploy ## Port-forward to simplest RabbitMQ on K8S Management
-	$(KUBECTL) port-forward pod/rabbitmq-0 15672 15672
+.PHONY: shell
+shell: $(KUBECONFIG) ## Open shell in RabbitMQ node
+	$(KUBECTL) exec -it rabbitmq-0 -- /bin/bash
 
 .PHONY: public
-public: | deploy ## Make simplest RabbitMQ on K8S public
+public: $(KUBECONFIG) ## Make simplest RabbitMQ on K8S public
 	$(KUBECTL) apply --filename $(CURDIR)/k8s/service.yml
 
 .PHONY: persistent
-persistent: | deploy ## Give RabbitMQ on K8S persistent storage
-	$(error TODO)
-
-.PHONY: persistent-check
-persistent-check: | persistent ## Check if RabbitMQ on K8S preserves messages
-	$(error TODO)
-
-.PHONY: persistent-benchmark
-persistent-benchmark: | persistent ## Benchmark simplest persistent RabbitMQ on K8S
-	$(error TODO)
+persistent: $(KUBECONFIG) | $(YQ) ## Give RabbitMQ on K8S persistent storage
+	$(KUBECTL) apply --filename $(CURDIR)/k8s/pvc.yml
+	$(YQ) merge $(CURDIR)/k8s/statefulset* | $(KUBECTL) apply --filename -
 
 .PHONY: benchmark
-benchmark: | deploy ## Benchmark simplest RabbitMQ on K8S
+benchmark: $(KUBECONFIG) ## Benchmark simplest RabbitMQ on K8S
 	$(error TODO)

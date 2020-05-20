@@ -1,0 +1,22 @@
+spec:
+  template:
+    spec:
+      containers:
+        - name: rabbitmq
+          volumeMounts:
+            - mountPath: "/var/lib/rabbitmq"
+              name: rabbitmq
+      volumes:
+        - name: rabbitmq
+          persistentVolumeClaim:
+            claimName: rabbitmq
+      initContainers:
+        - name: rabbitmq-persistent-volume-permission-fix
+          image: busybox
+          command:
+            - "/bin/chmod"
+            - "777"
+            - "/rabbitmq-persistent-volume"
+          volumeMounts:
+            - name: rabbitmq
+              mountPath: /rabbitmq-persistent-volume
