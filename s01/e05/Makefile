@@ -83,9 +83,9 @@ define ENV
 export XDG_CONFIG_HOME="$(XDG_CONFIG_HOME)"
 export DIGITALOCEAN_ACCESS_TOKEN="$(DIGITALOCEAN_ACCESS_TOKEN)"
 export KUBECONFIG="$(KUBECONFIG)"
-unalias k; alias k=kubectl
-unalias d; alias d=doctl
-unalias m; alias m=make
+unalias k 2>/dev/null; alias k=kubectl
+unalias d 2>/dev/null; alias d=doctl
+unalias m 2>/dev/null; alias m=make
 endef
 export ENV
 env: | $(DOCTL_CONFIG) $(KUBECONFIG_DIR) ## Configure shell env
