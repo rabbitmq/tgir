@@ -64,12 +64,13 @@ $(K9S):
 	$(error Please install k9s: https://github.com/derailed/k9s#installation)
 endif
 
-k9s: $(K9S) | $(KUBECONFIG) ## Interact with K8S via terminal UI
+.PHONY: k9s
+k9s: | $(K9S) $(KUBECONFIG) ## Interact with K8S via terminal UI
 	$(K9S) --namespace default
 
 $(DOCTL_CONFIG_DIR):
 	mkdir -p $(@)
-$(DOCTL_CONFIG): $(DOCTL_CONFIG_DIR) | $(DOCTL)
+$(DOCTL_CONFIG): | $(DOCTL_CONFIG_DIR) $(DOCTL)
 	$(DOCTL) --config $(DOCTL_CONFIG) auth init
 
 $(KUBECONFIG_DIR):
@@ -87,11 +88,11 @@ unalias d; alias d=doctl
 unalias m; alias m=make
 endef
 export ENV
-env: $(DOCTL_CONFIG) $(KUBECONFIG_DIR) ## Configure shell env
+env: | $(DOCTL_CONFIG) $(KUBECONFIG_DIR) ## Configure shell env
 	@echo "$$ENV"
 
 .PHONY: k8s
-k8s: $(DOCTL_CONFIG) $(KUBECONFIG_DIR) ## Create K8S cluster
+k8s: | $(DOCTL_CONFIG) $(KUBECONFIG_DIR) ## Create K8S cluster
 	$(DOCTL) kubernetes cluster get $(NAMESPACE) \
 	|| time $(DOCTL) kubernetes cluster create $(NAMESPACE) \
 	  --tag TGIR \
@@ -99,27 +100,27 @@ k8s: $(DOCTL_CONFIG) $(KUBECONFIG_DIR) ## Create K8S cluster
 	  --region $(K8S_REGION)
 
 .PHONY: k8s-ls
-k8s-ls: $(DOCTL_CONFIG) ## List K8S clusters
+k8s-ls: | $(DOCTL_CONFIG) ## List K8S clusters
 	$(DOCTL) kubernetes cluster list
 
 .PHONY: k8s-rm
-k8s-rm: $(DOCTL_CONFIG) ## Delete K8S cluster
-	time $(DOCTL) kubernetes cluster delete $(NAMESPACE)
+k8s-rm: | $(DOCTL_CONFIG) ## Delete K8S cluster
+	$(DOCTL) kubernetes cluster delete $(NAMESPACE)
 
 .PHONY: k8s-node-sizes
-k8s-node-sizes: $(DOCTL_CONFIG) ## Show all size options for K8S nodes
+k8s-node-sizes: | $(DOCTL_CONFIG) ## Show all size options for K8S nodes
 	$(DOCTL) kubernetes options sizes
 
 .PHONY: k8s-regions
-k8s-regions: $(DOCTL_CONFIG) ## Show all regions where K8S can be deployed
+k8s-regions: | $(DOCTL_CONFIG) ## Show all regions where K8S can be deployed
 	$(DOCTL) kubernetes options regions
 
 .PHONY: vms
-vms: $(DOCTL_CONFIG) ## Show all VMs (aka Droplets)
+vms: | $(DOCTL_CONFIG) ## Show all VMs (aka Droplets)
 	$(DOCTL) compute droplet list && echo
 
 .PHONY: lbs
-lbs: $(DOCTL_CONFIG) ## Show all Load Balancers
+lbs: | $(DOCTL_CONFIG) ## Show all Load Balancers
 	$(DOCTL) compute load-balancer list && echo
 
 .PHONY: vols
@@ -142,7 +143,7 @@ public: | $(KUBECONFIG) ## Make simplest RabbitMQ on K8S public
 	$(KUBECTL) apply --filename $(CURDIR)/k8s/service.yml
 
 .PHONY: persistent
-persistent: | $(KUBECONFIG) | $(YQ) ## Give RabbitMQ on K8S persistent storage
+persistent: | $(KUBECONFIG) $(YQ) ## Give RabbitMQ on K8S persistent storage
 	$(KUBECTL) apply --filename $(CURDIR)/k8s/persistentvolumeclaim.yml
 	$(YQ) merge $(CURDIR)/k8s/statefulset* | $(KUBECTL) apply --filename -
 
