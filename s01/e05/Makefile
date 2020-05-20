@@ -12,41 +12,70 @@ ifneq ($(wildcard $(DOCTL_CONFIG)),)
 DIGITALOCEAN_ACCESS_TOKEN := $(shell awk '/access-token/ { print $$2 }' < $(DOCTL_CONFIG))
 export DIGITALOCEAN_ACCESS_TOKEN
 endif
-KUBECONFIG_DIR := $(XDG_CONFIG_HOME)/.kube
+KUBECONFIG_DIR := $(XDG_CONFIG_HOME)/kubectl
 KUBECONFIG := $(KUBECONFIG_DIR)/config
 export KUBECONFIG
 
-DOCTL := /usr/local/bin/doctl
+ifeq ($(PLATFORM),Darwin)
+DOCTL ?= /usr/local/bin/doctl
 $(DOCTL):
 	brew install doctl
+else
+DOCTL ?= /usr/bin/doctl
+$(DOCTL):
+	$(error Please install doctl: https://github.com/digitalocean/doctl#installing-doctl)
+endif
+.PHONY: doctl
+doctl: $(DOCTL)
 
+ifeq ($(PLATFORM),Darwin)
 # Do not use kubectl installed by Docker for Desktop, this will typically be an older version than kubernetes-cli
 # Use the latest installed kubernetes-cli
-KUBECTL := $(lastword $(wildcard /usr/local/Cellar/kubernetes-cli/*/bin/kubectl))
+KUBECTL ?= $(lastword $(wildcard /usr/local/Cellar/kubernetes-cli/*/bin/kubectl))
 $(KUBECTL):
 	brew install kubernetes-cli
+else
+KUBECTL ?= /usr/bin/kubectl
+$(KUBECTL):
+	$(error Please install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl)
+endif
+.PHONY: kubectl
+kubectl: $(KUBECTL)
 
-YQ := /usr/local/bin/yq
+ifeq ($(PLATFORM),Darwin)
+YQ ?= /usr/local/bin/yq
 $(YQ):
 	brew install yq
+else
+YQ ?= /usr/bin/yq
+$(YQ):
+	$(error Please install yq: https://github.com/mikefarah/yq#install)
+endif
+.PHONY: yq
 yq: $(YQ)
+
+ifeq ($(PLATFORM),Darwin)
+K9S ?= /usr/local/bin/k9s
+$(K9S):
+	brew install derailed/k9s/k9s
+else
+K9S ?= /usr/bin/k9s
+$(K9S):
+	$(error Please install k9s: https://github.com/derailed/k9s#installation)
+endif
+
+k9s: $(K9S) | $(KUBECONFIG) ## Interact with K8S via terminal UI
+	$(K9S) --namespace default
 
 $(DOCTL_CONFIG_DIR):
 	mkdir -p $(@)
-
-K9S := /usr/local/bin/k9s
-$(K9S):
-	brew install derailed/k9s/k9s
-k9s: $(K9S) ## Interact with K8S via terminal UI
-	$(K9S)
-
 $(DOCTL_CONFIG): $(DOCTL_CONFIG_DIR) | $(DOCTL)
 	$(DOCTL) --config $(DOCTL_CONFIG) auth init
 
 $(KUBECONFIG_DIR):
 	mkdir -p $(@)
-
-$(KUBECONFIG): $(KUBECTL) k8s
+$(KUBECONFIG): | $(KUBECONFIG_DIR) $(KUBECTL) $(DOCTL)
+	$(DOCTL) kubernetes cluster kubeconfig save $(NAMESPACE)
 
 .PHONY: env
 define ENV
@@ -62,7 +91,7 @@ env: $(DOCTL_CONFIG) $(KUBECONFIG_DIR) ## Configure shell env
 	@echo "$$ENV"
 
 .PHONY: k8s
-k8s: $(DOCTL_CONFIG) ## Create K8S cluster
+k8s: $(DOCTL_CONFIG) $(KUBECONFIG_DIR) ## Create K8S cluster
 	$(DOCTL) kubernetes cluster get $(NAMESPACE) \
 	|| time $(DOCTL) kubernetes cluster create $(NAMESPACE) \
 	  --tag TGIR \
@@ -85,35 +114,38 @@ k8s-node-sizes: $(DOCTL_CONFIG) ## Show all size options for K8S nodes
 k8s-regions: $(DOCTL_CONFIG) ## Show all regions where K8S can be deployed
 	$(DOCTL) kubernetes options regions
 
-.PHONY: drops
-drops: $(DOCTL_CONFIG) ## Show all Droplets (aka VMs)
-	$(DOCTL) compute droplet list
+.PHONY: vms
+vms: $(DOCTL_CONFIG) ## Show all VMs (aka Droplets)
+	$(DOCTL) compute droplet list && echo
 
 .PHONY: lbs
 lbs: $(DOCTL_CONFIG) ## Show all Load Balancers
-	$(DOCTL) compute load-balancer list
+	$(DOCTL) compute load-balancer list && echo
 
 .PHONY: vols
-vols: $(DOCTL_CONFIG) ## Show all Volumes
-	$(DOCTL) compute volume list
+vols: | $(DOCTL_CONFIG) ## Show all Volumes
+	$(DOCTL) compute volume list && echo
+
+.PHONY: resources
+resources: lbs vms vols ## Show all resources
 
 .PHONY: deploy
-deploy: $(DOCTL_CONFIG) $(KUBECONFIG) ## Deploy the simplest RabbitMQ on K8S
+deploy: | $(DOCTL_CONFIG) $(KUBECONFIG) ## Deploy the simplest RabbitMQ on K8S
 	$(KUBECTL) apply --filename $(CURDIR)/k8s/statefulset.yml
 
 .PHONY: shell
-shell: $(KUBECONFIG) ## Open shell in RabbitMQ node
+shell: | $(KUBECONFIG) ## Open shell in RabbitMQ node
 	$(KUBECTL) exec -it rabbitmq-0 -- /bin/bash
 
 .PHONY: public
-public: $(KUBECONFIG) ## Make simplest RabbitMQ on K8S public
+public: | $(KUBECONFIG) ## Make simplest RabbitMQ on K8S public
 	$(KUBECTL) apply --filename $(CURDIR)/k8s/service.yml
 
 .PHONY: persistent
-persistent: $(KUBECONFIG) | $(YQ) ## Give RabbitMQ on K8S persistent storage
+persistent: | $(KUBECONFIG) | $(YQ) ## Give RabbitMQ on K8S persistent storage
 	$(KUBECTL) apply --filename $(CURDIR)/k8s/persistentvolumeclaim.yml
 	$(YQ) merge $(CURDIR)/k8s/statefulset* | $(KUBECTL) apply --filename -
 
 .PHONY: benchmark
-benchmark: $(KUBECONFIG) ## Benchmark simplest RabbitMQ on K8S
+benchmark: | $(KUBECONFIG) ## Benchmark simplest RabbitMQ on K8S
 	$(KUBECTL) create --filename $(CURDIR)/k8s/job.benchmark.yml
