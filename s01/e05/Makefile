@@ -12,24 +12,54 @@ ifneq ($(wildcard $(DOCTL_CONFIG)),)
 DIGITALOCEAN_ACCESS_TOKEN := $(shell awk '/access-token/ { print $$2 }' < $(DOCTL_CONFIG))
 export DIGITALOCEAN_ACCESS_TOKEN
 endif
+KUBECONFIG_DIR := $(XDG_CONFIG_HOME)/.kube
+KUBECONFIG := $(KUBECONFIG_DIR)/config
+export KUBECONFIG
+
 DOCTL := /usr/local/bin/doctl
 $(DOCTL):
 	brew install doctl
 
+# Do not use kubectl installed by Docker for Desktop, this will typically be an older version than kubernetes-cli
+# Use the latest installed kubernetes-cli
+KUBECTL := $(lastword $(wildcard /usr/local/Cellar/kubernetes-cli/*/bin/kubectl))
+$(KUBECTL):
+	brew install kubernetes-cli
+
 $(DOCTL_CONFIG_DIR):
-	mkdir -p $(DOCTL_CONFIG_DIR)
+	mkdir -p $(@)
+
+K9S := /usr/local/bin/k9s
+$(K9S):
+	brew install derailed/k9s/k9s
+k9s: $(K9S) ## Interact with K8S via terminal UI
+	$(K9S)
 
 $(DOCTL_CONFIG): $(DOCTL_CONFIG_DIR) | $(DOCTL)
-	$(DOCTL) auth init
+	$(DOCTL) --config $(DOCTL_CONFIG) auth init
+
+$(KUBECONFIG_DIR):
+	mkdir -p $(@)
+
+$(KUBECONFIG): k8s
 
 .PHONY: env
-env: $(DOCTL_CONFIG)
-	@echo "export XDG_CONFIG_HOME=\"$(XDG_CONFIG_HOME)\""
-	@echo "export DIGITALOCEAN_ACCESS_TOKEN=\"$(DIGITALOCEAN_ACCESS_TOKEN)\""
+define ENV
+export XDG_CONFIG_HOME="$(XDG_CONFIG_HOME)"
+export DIGITALOCEAN_ACCESS_TOKEN="$(DIGITALOCEAN_ACCESS_TOKEN)"
+export KUBECONFIG="$(KUBECONFIG)"
+unalias k; alias k=kubectl
+unalias d; alias d=doctl
+unalias m; alias m=make
+endef
+export ENV
+env: $(DOCTL_CONFIG) $(KUBECONFIG_DIR) ## Configure shell env
+	@echo "$$ENV"
 
 .PHONY: k8s
 k8s: $(DOCTL_CONFIG) ## Create K8S cluster
-	time $(DOCTL) kubernetes cluster create $(NAMESPACE) \
+	$(DOCTL) kubernetes cluster get $(NAMESPACE) \
+	|| time $(DOCTL) kubernetes cluster create $(NAMESPACE) \
 	  --tag TGIR \
 	  --size $(K8S_NODE_SIZE) \
 	  --region $(K8S_REGION)
@@ -50,6 +80,34 @@ k8s-node-sizes: $(DOCTL_CONFIG) ## Show all size options for K8S nodes
 k8s-regions: $(DOCTL_CONFIG) ## Show all regions where K8S can be deployed
 	$(DOCTL) kubernetes options regions
 
-.PHONY: droplets
-droplets: $(DOCTL_CONFIG) ## Show all running droplets
+.PHONY: vms
+vms: $(DOCTL_CONFIG) ## Show all running VMs (aka droplets)
 	$(DOCTL) compute droplet list
+
+.PHONY: deploy
+deploy: $(DOCTL_CONFIG) $(KUBECONFIG) $(KUBECTL) ## Deploy the simplest RabbitMQ on K8S
+	$(KUBECTL) apply --filename $(CURDIR)/k8s/statefulset.yml
+
+.PHONY: http
+http: | deploy ## Port-forward to simplest RabbitMQ on K8S Management
+	$(KUBECTL) port-forward pod/rabbitmq-0 15672 15672
+
+.PHONY: public
+public: | deploy ## Make simplest RabbitMQ on K8S public
+	$(KUBECTL) apply --filename $(CURDIR)/k8s/service.yml
+
+.PHONY: persistent
+persistent: | deploy ## Give RabbitMQ on K8S persistent storage
+	$(error TODO)
+
+.PHONY: persistent-check
+persistent-check: | persistent ## Check if RabbitMQ on K8S preserves messages
+	$(error TODO)
+
+.PHONY: persistent-benchmark
+persistent-benchmark: | persistent ## Benchmark simplest persistent RabbitMQ on K8S
+	$(error TODO)
+
+.PHONY: benchmark
+benchmark: | deploy ## Benchmark simplest RabbitMQ on K8S
+	$(error TODO)

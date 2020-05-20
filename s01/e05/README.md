@@ -11,8 +11,7 @@ Kubernetes is everywhere and I want to run RabbitMQ on it too. Where do I start?
 1. Setup a K8S cluster with one command and deploy RabbitMQ a few minutes later
 2. Connect to RabbitMQ via public IP
 3. Avoid losing messages
-4. Improve service availability
-5. How fast is it?
+4. How fast is it?
 
 Notes and links at https://github.com/rabbitmq/tgir/tree/S01E05/s01/e05
 
