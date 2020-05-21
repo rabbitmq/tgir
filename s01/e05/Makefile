@@ -130,9 +130,13 @@ vols: | $(DOCTL_CONFIG) ## Show all Volumes
 .PHONY: resources
 resources: lbs vms vols ## Show all resources
 
-.PHONY: deploy
-deploy: | $(DOCTL_CONFIG) $(KUBECONFIG) ## Deploy the simplest RabbitMQ on K8S
+.PHONY: rabbitmq
+rabbitmq: | $(DOCTL_CONFIG) $(KUBECONFIG) ## Deploy the simplest RabbitMQ on K8S
 	$(KUBECTL) apply --filename $(CURDIR)/k8s/statefulset.yml
+
+.PHONY: rabbitmq-rm
+rabbitmq-rm: | $(DOCTL_CONFIG) $(KUBECONFIG) ## Delete RabbitMQ and all linked resources
+	$(KUBECTL) delete --ignore-not-found=true --filename $(CURDIR)/k8s
 
 .PHONY: shell
 shell: | $(KUBECONFIG) ## Open shell in RabbitMQ node
@@ -148,5 +152,11 @@ persistent: | $(KUBECONFIG) $(YQ) ## Give RabbitMQ on K8S persistent storage
 	$(YQ) merge $(CURDIR)/k8s/statefulset* | $(KUBECTL) apply --filename -
 
 .PHONY: benchmark
-benchmark: | $(KUBECONFIG) ## Benchmark simplest RabbitMQ on K8S
-	$(KUBECTL) create --filename $(CURDIR)/k8s/job.benchmark.yml
+benchmark: | public $(KUBECONFIG) ## Benchmark simplest RabbitMQ on K8S
+	$(KUBECTL) create --filename $(CURDIR)/k8s/benchmark.job
+
+.PHONY: all
+all: k8s persistent public benchmark ## Create K8S cluster, deploy RabbitMQ, make public & persistent, then benchmark
+
+.PHONY: clean
+clean: rabbitmq-rm k8s-rm ## Delete RabbitMQ and all linked resources, then delete K8S cluster

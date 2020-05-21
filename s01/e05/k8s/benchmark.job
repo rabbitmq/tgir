@@ -1,3 +1,4 @@
+# vim: set filetype=yaml :
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -35,4 +36,4 @@ spec:
             - "--routing-key"
             - "benchmark"
             - "--time"
-            - "30"
+            - "60"
