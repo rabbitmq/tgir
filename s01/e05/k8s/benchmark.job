@@ -1,0 +1,39 @@
+# vim: set filetype=yaml :
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: benchmark-
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: perftest
+          image: pivotalrabbitmq/perf-test:2.11.0
+          args:
+            - "--uri"
+            - "amqp://guest:guest@rabbitmq:5672/%2f"
+            - "--producers"
+            - "1"
+            - "--consumers"
+            - "2"
+            - "--flag"
+            - "persistent"
+            - "--auto-delete"
+            - "false"
+            - "--size"
+            - "100"
+            - "--qos"
+            - "10"
+            - "--multi-ack-every"
+            - "5"
+            - "--confirm"
+            - "100"
+            - "--confirm-timeout"
+            - "1"
+            - "--queue"
+            - "benchmark"
+            - "--routing-key"
+            - "benchmark"
+            - "--time"
+            - "60"
