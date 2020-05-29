@@ -1,7 +1,6 @@
 include ../../Makefile
 
 NAMESPACE := tgir-s01e05-$(USER)
-K8S_NODE_SIZE ?= s-2vcpu-4gb
 K8S_REGION ?= lon1
 
 XDG_CONFIG_HOME := $(CURDIR)/.config
@@ -95,9 +94,9 @@ env: | $(DOCTL_CONFIG) $(KUBECONFIG_DIR) ## Configure shell env - eval "$(make e
 k8s: | $(DOCTL_CONFIG) $(KUBECONFIG_DIR) ## Create K8S cluster
 	$(DOCTL) kubernetes cluster get $(NAMESPACE) \
 	|| time $(DOCTL) kubernetes cluster create $(NAMESPACE) \
-	  --tag TGIR \
-	  --size $(K8S_NODE_SIZE) \
-	  --region $(K8S_REGION)
+	   --region $(K8S_REGION) \
+	   --auto-upgrade \
+	   --maintenance-window saturday=20:00
 
 .PHONY: k8s-ls
 k8s-ls: | $(DOCTL_CONFIG) ## List K8S clusters
