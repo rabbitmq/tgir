@@ -11,11 +11,12 @@ You have a single RabbitMQ node running on Kubernetes (K8S).
 [Deploying RabbitMQ to Kubernetes: What’s Involved?](https://www.rabbitmq.com/blog/2020/08/10/deploying-rabbitmq-to-kubernetes-whats-involved/) blog post added more detail.
 With the RabbitMQ on K8S basics understood, it's time to deploy a RabbitMQ cluster on K8S and tackle more advanced topics:
 
-1. How to deploy RabbitMQ so that K8S upgrades will not affect RabbitMQ service availability?
-2. How to configure your RabbitMQ clients so that they continue working when a minority of nodes go away?
-3. What to expect when a majority of RabbitMQ nodes go away?
-4. What happens when all RabbitMQ nodes go away? You will be surprised about this one, just as I have been.
-5. How to upgrade RabbitMQ nodes in a cluster? It's a brand new feature in [RabbitMQ v3.8.8](https://github.com/rabbitmq/rabbitmq-server/releases/tag/v3.8.8) that shipped a few weeks ago.
+1. What are good liveness & readiness probes?
+2. How to configure RabbitMQ for availability during K8S upgrades?
+3. How to configure clients to handle a minority of RabbitMQ nodes becoming unavailable?
+4. What to expect when a majority of RabbitMQ nodes go away?
+5. What happens when all RabbitMQ nodes go away? [You will be surprised about this one, just as I have been](https://stackoverflow.com/questions/62355470/how-to-configure-a-rabbitmq-cluster-in-kubernetes-with-a-mounted-persistent-volu?stw=2).
+
 
 
 ## MAKE TARGETS
