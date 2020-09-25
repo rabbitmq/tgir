@@ -1,101 +1,115 @@
 include ../../Makefile
 
-NAMESPACE := tgir-s01e06-$(USER)
+TGIR := tgir-s01e06
+CLUSTER := $(TGIR)-$(USER)
+# Pick the one but last, so that we can upgrade
+# Find out what versions are available: make k8s-versions
+CLUSTER_VERSION ?= 1.17.9-gke.1504
+CLUSTE_RELEASES ?= rapid
+CLUSTER_NODE_TYPE ?= n2-standard-2
+CLUSTER_NODES_PER_ZONE ?= 1
 
-XDG_CONFIG_HOME := $(CURDIR)/.config
-export XDG_CONFIG_HOME
+# You may want to overwrite this with your GCP project, e.g. export GCP_PROJECT=my-project-name
+GCP_PROJECT ?= cf-rabbitmq-core
+# You may want to overwrite this with your preferred GCP region, e.g. export GCP_REGION=us-east1
+GCP_REGION ?= europe-west2
+
 KUBECONFIG_DIR := $(XDG_CONFIG_HOME)/kubectl
 KUBECONFIG := $(KUBECONFIG_DIR)/config
 export KUBECONFIG
 
-ifeq ($(PLATFORM),Darwin)
-# Do not use kubectl installed by Docker for Desktop, this will typically be an older version than kubernetes-cli
-# Use the latest installed kubernetes-cli
-KUBECTL ?= $(lastword $(wildcard /usr/local/Cellar/kubernetes-cli/*/bin/kubectl))
-$(KUBECTL):
-	brew install kubernetes-cli
-else
-KUBECTL ?= /usr/bin/kubectl
-$(KUBECTL):
-	$(error Please install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl)
-endif
-.PHONY: kubectl
-kubectl: $(KUBECTL)
+RABBITMQ_DEFAULT_USER ?= $(USER)
+RABBITMQ_DEFAULT_PASS ?= $(TGIR)
+RABBITMQ_ERLANG_COOKIE ?= $(CLUSTER)
 
-ifeq ($(PLATFORM),Darwin)
-YQ ?= /usr/local/bin/yq
-$(YQ):
-	brew install yq
-else
-YQ ?= /usr/bin/yq
-$(YQ):
-	$(error Please install yq: https://github.com/mikefarah/yq#install)
-endif
-.PHONY: yq
-yq: $(YQ)
-
-ifeq ($(PLATFORM),Darwin)
-K9S ?= /usr/local/bin/k9s
-$(K9S):
-	brew install derailed/k9s/k9s
-else
-K9S ?= /usr/bin/k9s
-$(K9S):
-	$(error Please install k9s: https://github.com/derailed/k9s#installation)
-endif
-
-.PHONY: k9s
-k9s: | $(K9S) $(KUBECONFIG) ## Interact with K8S via terminal UI
-	$(K9S) --namespace default
+CLOUDSDK_CONFIG := $(XDG_CONFIG_HOME)/gcloud/configurations/config_default
+export CLOUDSDK_CONFIG
+$(CLOUDSDK_CONFIG): $(GCLOUD)
+	$(GCLOUD) auth login \
+	&& $(GCLOUD) config set project $(GCP_PROJECT) \
+	&& $(GCLOUD) config set compute/region $(GCP_REGION)
 
 $(KUBECONFIG_DIR):
 	mkdir -p $(@)
-$(KUBECONFIG): | $(KUBECONFIG_DIR) $(KUBECTL) $(DOCTL)
-	$(DOCTL) kubernetes cluster kubeconfig save $(NAMESPACE)
+$(KUBECONFIG): | $(KUBECTL) $(KUBECONFIG_DIR) $(CLOUDSDK_CONFIG)
+	$(GCLOUD) container clusters get-credentials $(CLUSTER)
 
-.PHONY: env
+.PHONY: k9s
+k9s: | $(K9S) $(KUBECONFIG) ## Interact with K8S via terminal UI
+	$(K9S) --all-namespaces
+
 define ENV
 export XDG_CONFIG_HOME="$(XDG_CONFIG_HOME)"
 export KUBECONFIG="$(KUBECONFIG)"
+export CLOUDSDK_CONFIG="$(CLOUDSDK_CONFIG)"
 unalias k 2>/dev/null; alias k=kubectl
 unalias m 2>/dev/null; alias m=make
 endef
 export ENV
-env: | $(DOCTL_CONFIG) $(KUBECONFIG_DIR) ## Configure shell env - eval "$(make env)"
+.PHONY: env
+env:: | $(CLOUDSDK_CONFIG) $(KUBECONFIG_DIR) ## Configure shell env - eval "$(make env)"
 	@echo "$$ENV"
 
+.PHONY: k8s-versions
+k8s-versions: | $(CLOUDSDK_CONFIG) ## List all available K8S versions
+	$(GCLOUD) container get-server-config
+
 .PHONY: k8s
-k8s: | $(KUBECONFIG_DIR) ## Create K8S cluster
+k8s: | $(CLOUDSDK_CONFIG) ## Create K8S cluster
+	$(GCLOUD) container clusters describe $(CLUSTER) \
+	|| $(GCLOUD) container clusters create $(CLUSTER) \
+	   --release-channel $(CLUSTE_RELEASES) \
+	   --cluster-version $(CLUSTER_VERSION) \
+	   --machine-type $(CLUSTER_NODE_TYPE) \
+	   --num-nodes $(CLUSTER_NODES_PER_ZONE) \
+	   --enable-shielded-nodes \
+	   --disk-type "pd-ssd" \
+	   --disk-size "100" \
+	   --enable-ip-alias \
+	   --enable-autoupgrade \
+	   --enable-autorepair \
+	   --max-surge-upgrade "1" \
+	   --max-unavailable-upgrade "1" \
+	   --metadata disable-legacy-endpoints=true \
+	   --no-enable-master-authorized-networks \
+	   --addons "HorizontalPodAutoscaling,HttpLoadBalancing"
+
+.PHONY: k8s-help
+k8s-help: | $(CLOUDSDK_CONFIG) ## List all options available when creating a cluster
+	$(GCLOUD) container clusters create --help
 
 .PHONY: k8s-ls
-k8s-ls: | ## List K8S clusters
+k8s-ls: | $(CLOUDSDK_CONFIG) ## List K8S clusters
+	$(GCLOUD) container clusters list
 
 .PHONY: k8s-rm
-k8s-rm: | ## Delete K8S cluster
+k8s-rm: | $(CLOUDSDK_CONFIG) ## Delete K8S cluster
+	$(GCLOUD) container clusters delete $(CLUSTER)
 
-.PHONY: k8s-node-sizes
-k8s-node-sizes: | ## Show all size options for K8S nodes
+.PHONY: generate-secrets
+generate-secrets::
 
-.PHONY: k8s-regions
-k8s-regions: | ## Show all regions where K8S can be deployed
+k8s/secret.default-user.yml: $(KUBECTL)
+	$(KUBECTL) create secret generic default-user \
+	  --dry-run=client --output=yaml --from-literal=value="default_user = $(RABBITMQ_DEFAULT_USER)" > $(@)
+generate-secrets:: k8s/secret.default-user.yml
 
-.PHONY: vms
-vms: | ## Show all VMs (aka Compute Engine instances)
+k8s/secret.default-pass.yml: $(KUBECTL)
+	$(KUBECTL) create secret generic default-pass \
+	  --dry-run=client --output=yaml --from-literal=value="default_pass = $(RABBITMQ_DEFAULT_PASS)" > $(@)
+generate-secrets:: k8s/secret.default-pass.yml
 
-.PHONY: lbs
-lbs: | ## Show all Load Balancers
-
-.PHONY: vols
-vols: | ## Show all Volumes
-
-.PHONY: resources
-resources: lbs vms vols ## Show all resources
+k8s/secret.erlang-cookie.yml: $(KUBECTL)
+	$(KUBECTL) create secret generic erlang-cookie \
+	  --dry-run=client --output=yaml --from-literal=value="$(RABBITMQ_ERLANG_COOKIE)" > $(@)
+generate-secrets:: k8s/secret.erlang-cookie.yml
 
 .PHONY: rabbitmq
-rabbitmq: | $(KUBECONFIG) ## Deploy a RabbitMQ cluster on K8S
+rabbitmq: | $(KUBECONFIG) generate-secrets ## Deploy a RabbitMQ cluster on K8S
+	$(KUBECTL) apply --filename $(CURDIR)/k8s
 
 .PHONY: rabbitmq-rm
-rabbitmq-rm: | $(KUBECONFIG) ## Delete RabbitMQ and all linked resources
+rabbitmq-rm: | $(KUBECONFIG) ## Delete RabbitMQ cluster and all associated resources
 
 .PHONY: rabbitmq-workload
 rabbitmq-workload: | $(KUBECONFIG) ## Deploy a RabbitMQ publishing & consuming workload
@@ -104,4 +118,4 @@ rabbitmq-workload: | $(KUBECONFIG) ## Deploy a RabbitMQ publishing & consuming w
 all: k8s rabbitmq ## Create K8S cluster & deploy RabbitMQ
 
 .PHONY: clean
-clean: rabbitmq-rm k8s-rm ## Delete RabbitMQ and all linked resources, then delete K8S cluster
+clean: rabbitmq-rm k8s-rm ## Delete RabbitMQ cluster and all associated resources, then delete K8S cluster

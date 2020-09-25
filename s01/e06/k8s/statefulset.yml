@@ -1,0 +1,156 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rabbitmq
+spec:
+  selector:
+    matchLabels:
+      app: rabbitmq
+  # This service must exist before the StatefulSet, and is responsible for:
+  # * the network identity of the set
+  # * cluster formation
+  #
+  # Pod hostnames are set using the following naming convention:
+  #   podName.serviceName.default.svc.cluster.local
+  serviceName: reliable-rabbit
+  volumeClaimTemplates:
+  - metadata:
+      name: rabbitmq-data
+    spec:
+      storageClassName: ssd
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: "10Gi"
+  template:
+    metadata:
+      name: rabbitmq
+      labels:
+        app: rabbitmq
+    spec:
+      volumes:
+        - name: rabbitmq-data
+          persistentVolumeClaim:
+            claimName: rabbitmq-data
+        - name: enabled-plugins
+          configMap:
+            name: enabled-plugins
+            items:
+              - key: value
+                path: enabled_plugins
+        - name: cluster-formation
+          configMap:
+            name: cluster-formation
+            items:
+              - key: value
+                path: cluster-formation.conf
+        - name: queue-master-locator
+          configMap:
+            name: queue-master-locator
+            items:
+              - key: value
+                path: queue-master-locator.conf
+        - name: default-user
+          secret:
+            secretName: default-user
+            items:
+              - key: value
+                path: default-user.conf
+        - name: default-pass
+          secret:
+            secretName: default-pass
+            items:
+              - key: value
+                path: default-pass.conf
+        - name: erlang-cookie
+          secret:
+            secretName: erlang-cookie
+            items:
+              - key: value
+                path: erlang.cookie
+      serviceAccount: rabbitmq
+      # The Docker image runs as the `rabbitmq` user with uid 999 
+      # and writes to the `rabbitmq.conf` file
+      # The security context is needed since the image needs
+      # permission to write to this file. Without the security 
+      # context, `rabbitmq.conf` is owned by root and inaccessible
+      # by the `rabbitmq` user
+      securityContext:
+        fsGroup: 999
+        runAsUser: 999
+        runAsGroup: 999
+      initContainers:
+        - name: make-erlang-cookie-accessible-by-owner-only
+          image: busybox
+          volumeMounts:
+            - name: erlang-cookie
+              mountPath: "/var/run/secrets"
+          command:
+            - /bin/sh
+            - -exec
+          args:
+            - |-
+              sleep 3600
+              cp -f /var/run/secrets/erlang-cookie /var/lib/rabbitmq/.erlang.cookie
+              chmod 400 /var/lib/rabbitmq/.erlang.cookie
+      containers:
+        - name: rabbitmq
+          # https://hub.docker.com/_/rabbitmq/
+          image: rabbitmq:3.8-management
+          command:
+            - "rabbitmq-server"
+          volumeMounts:
+            - name: rabbitmq-data
+              mountPath: "/var/lib/rabbitmq/mnesia"
+            - name: "erlang-cookie"
+              mountPath: "/var/lib/rabbitmq/.erlang.cookie"
+              subPath: ".erlang.cookie"
+            - name: enabled-plugins
+              mountPath: "/etc/rabbitmq/enabled_plugins"
+              subPath: "enabled_plugins"
+            - name: default-user
+              mountPath: "/etc/rabbitmq/conf.d/default_user.conf"
+              subPath: "default_user.conf"
+            - name: default-pass
+              mountPath: "/etc/rabbitmq/conf.d/default_pass.conf"
+              subPath: "default_pass.conf"
+            - name: cluster-formation
+              mountPath: "/etc/rabbitmq/conf.d/cluster_formation.conf"
+              subPath: "cluster_formation.conf"
+            - name: queue-master-locator
+              mountPath: "/etc/rabbitmq/conf.d/queue_master_locator.conf"
+              subPath: "queue_master_locator.conf"
+          # List of all ports used in service.yml
+          ports:
+            - name: epmd
+              containerPort: 4369
+              protocol: TCP
+            - name: amqp
+              containerPort: 5672
+              protocol: TCP
+            - name: http
+              containerPort: 15672
+              protocol: TCP
+            - name: prometheus
+              containerPort: 15692
+              protocol: TCP
+            - name: erlang
+              containerPort: 25672
+              protocol: TCP
+          livenessProbe:
+            exec:
+              command:
+                - "rabbitmq-diagnostics"
+                - "ping"
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 15
+          readinessProbe:
+            exec:
+              command:
+                - "rabbitmq-diagnostics"
+                - "check_port_connectivity"
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 15

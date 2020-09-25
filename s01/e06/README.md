@@ -7,13 +7,13 @@
 <a href="https://www.youtube.com/watch?v=TGIRS01E06" target="_blank"><img src="video.jpg" border="50" /></a>
 
 You have a single RabbitMQ node running on Kubernetes (K8S).
-[TGIRS01E05](https://github.com/rabbitmq/tgir/tree/S01E05/s01/e05) covered the getting started part well.
-[Deploying RabbitMQ to Kubernetes: What’s Involved?](https://www.rabbitmq.com/blog/2020/08/10/deploying-rabbitmq-to-kubernetes-whats-involved/) blog post added more detail.
-With the RabbitMQ on K8S basics understood, it's time to deploy a RabbitMQ cluster on K8S and tackle more advanced topics:
+[S01E05](https://github.com/rabbitmq/tgir/tree/S01E05/s01/e05) covered the getting started part well, and [Deploying RabbitMQ to Kubernetes: What’s Involved?](https://www.rabbitmq.com/blog/2020/08/10/deploying-rabbitmq-to-kubernetes-whats-involved/) blog post added more detail.
+
+With the RabbitMQ on K8S basics understood, it's time to deploy a RabbitMQ cluster and tackle more advanced topics:
 
 1. What are good liveness & readiness probes?
 2. How to configure RabbitMQ for availability during K8S upgrades?
-3. How to configure clients to handle a minority of RabbitMQ nodes becoming unavailable?
+3. How to configure clients for handling a minority of RabbitMQ nodes becoming unavailable?
 4. What to expect when a majority of RabbitMQ nodes go away?
 5. What happens when all RabbitMQ nodes go away? [You will be surprised about this one, just as I have been](https://stackoverflow.com/questions/62355470/how-to-configure-a-rabbitmq-cluster-in-kubernetes-with-a-mounted-persistent-volu?stw=2).
 

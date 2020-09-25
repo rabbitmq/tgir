@@ -3,8 +3,6 @@ include ../../Makefile
 NAMESPACE := tgir-s01e05-$(USER)
 K8S_REGION ?= lon1
 
-XDG_CONFIG_HOME := $(CURDIR)/.config
-export XDG_CONFIG_HOME
 DOCTL_CONFIG_DIR := $(XDG_CONFIG_HOME)/doctl
 DOCTL_CONFIG := $(DOCTL_CONFIG_DIR)/config.yaml
 ifneq ($(wildcard $(DOCTL_CONFIG)),)
@@ -27,42 +25,6 @@ endif
 .PHONY: doctl
 doctl: $(DOCTL)
 
-ifeq ($(PLATFORM),Darwin)
-# Do not use kubectl installed by Docker for Desktop, this will typically be an older version than kubernetes-cli
-# Use the latest installed kubernetes-cli
-KUBECTL ?= $(lastword $(wildcard /usr/local/Cellar/kubernetes-cli/*/bin/kubectl))
-$(KUBECTL):
-	brew install kubernetes-cli
-else
-KUBECTL ?= /usr/bin/kubectl
-$(KUBECTL):
-	$(error Please install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl)
-endif
-.PHONY: kubectl
-kubectl: $(KUBECTL)
-
-ifeq ($(PLATFORM),Darwin)
-YQ ?= /usr/local/bin/yq
-$(YQ):
-	brew install yq
-else
-YQ ?= /usr/bin/yq
-$(YQ):
-	$(error Please install yq: https://github.com/mikefarah/yq#install)
-endif
-.PHONY: yq
-yq: $(YQ)
-
-ifeq ($(PLATFORM),Darwin)
-K9S ?= /usr/local/bin/k9s
-$(K9S):
-	brew install derailed/k9s/k9s
-else
-K9S ?= /usr/bin/k9s
-$(K9S):
-	$(error Please install k9s: https://github.com/derailed/k9s#installation)
-endif
-
 .PHONY: k9s
 k9s: | $(K9S) $(KUBECONFIG) ## Interact with K8S via terminal UI
 	$(K9S) --namespace default
@@ -77,7 +39,6 @@ $(KUBECONFIG_DIR):
 $(KUBECONFIG): | $(KUBECONFIG_DIR) $(KUBECTL) $(DOCTL)
 	$(DOCTL) kubernetes cluster kubeconfig save $(NAMESPACE)
 
-.PHONY: env
 define ENV
 export XDG_CONFIG_HOME="$(XDG_CONFIG_HOME)"
 export DIGITALOCEAN_ACCESS_TOKEN="$(DIGITALOCEAN_ACCESS_TOKEN)"
@@ -87,7 +48,8 @@ unalias d 2>/dev/null; alias d=doctl
 unalias m 2>/dev/null; alias m=make
 endef
 export ENV
-env: | $(DOCTL_CONFIG) $(KUBECONFIG_DIR) ## Configure shell env - eval "$(make env)"
+.PHONY: env
+env:: | $(DOCTL_CONFIG) $(KUBECONFIG_DIR) ## Configure shell env - eval "$(make env)"
 	@echo "$$ENV"
 
 .PHONY: k8s

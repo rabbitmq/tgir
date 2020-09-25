@@ -1,0 +1,43 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    app: rabbitmq
+    type: LoadBalancer
+  name: reliable-rabbit-public
+spec:
+  ports:
+   - name: http
+     protocol: TCP
+     port: 15672
+   - name: prometheus
+     protocol: TCP
+     port: 15692
+   - name: amqp
+     protocol: TCP
+     port: 5672
+  selector:
+    app: rabbitmq
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reliable-rabbit
+spec:
+  # This is a headless service:
+  # https://kubernetes.io/docs/concepts/services-networking/service/#headless-services
+  clusterIP: None
+  ports:
+  - name: epmd
+    port: 4369
+    protocol: TCP
+    targetPort: 4369
+  - name: erlang
+    port: 25672
+    protocol: TCP
+    targetPort: 25672
+  selector:
+    app: rabbitmq
+  type: ClusterIP
