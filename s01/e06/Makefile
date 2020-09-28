@@ -41,6 +41,8 @@ k9s: | $(K9S) $(KUBECONFIG) ## Interact with our K8S cluster via a terminal UI
 	$(K9S) --all-namespaces
 
 define ENV
+export GCP_PROJECT="$(GCP_PROJECT)"
+export GCP_REGION="$(GCP_REGION)"
 export XDG_CONFIG_HOME="$(XDG_CONFIG_HOME)"
 export KUBECONFIG="$(KUBECONFIG)"
 export CLOUDSDK_CONFIG="$(CLOUDSDK_CONFIG)"
