@@ -67,7 +67,7 @@ spec:
       containers:
       - name: rabbitmq
         # https://hub.docker.com/_/rabbitmq/
-        image: rabbitmq:3.8.9-management
+        image: rabbitmq:3.8.8-management
         command:
         - "rabbitmq-server"
         env:
@@ -154,18 +154,22 @@ spec:
         - name: stomp-web
           containerPort: 15674
           protocol: TCP
-        # TODO: startupProbe instead of liveness
+        # We use a startup probe to give RabbitMQ sufficient time to startup
+        # In this case, we check every 10 seconds that: "the node OS process is up (Erlang VM), registered with EPMD and CLI tools can authenticate with it"
+        #
+        # https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#when-should-you-use-a-startup-probe
         # https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#define-startup-probes
-        livenessProbe:
+        startupProbe:
           exec:
             command:
             - "rabbitmq-diagnostics"
             - "ping"
-          initialDelaySeconds: 10
-          periodSeconds: 30
-          timeoutSeconds: 15
+          failureThreshold: 60
+          periodSeconds: 10
+          timeoutSeconds: 9
         # TODO: readinessProbe
         # https://blog.colinbreck.com/kubernetes-liveness-and-readiness-probes-how-to-avoid-shooting-yourself-in-the-foot/
+        # https://medium.com/swlh/fantastic-probes-and-how-to-configure-them-fef7e030bd2f
         readinessProbe:
           exec:
             command:
@@ -295,7 +299,7 @@ spec:
       # * available to the rabbitmq container (shared empty dir mount)
       initContainers:
       - name: make-erlang-cookie-only-readable-by-rabbitmq
-        image: rabbitmq:3.8.9-management
+        image: rabbitmq:3.8.8-management
         volumeMounts:
         - name: erlang-cookie
           mountPath: /var/run/secrets/erlang-cookie

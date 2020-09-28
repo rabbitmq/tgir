@@ -74,6 +74,18 @@ endif
 yq: $(YQ)
 
 ifeq ($(PLATFORM),Darwin)
+BAT ?= /usr/local/bin/bat
+$(BAT):
+	brew install bat
+else
+BAT ?= /usr/bin/bat
+$(BAT):
+	$(error Please install bat: https://github.com/sharkdp/bat)
+endif
+.PHONY: bat
+bat: $(BAT)
+
+ifeq ($(PLATFORM),Darwin)
 K9S ?= /usr/local/bin/k9s
 $(K9S):
 	brew install derailed/k9s/k9s
