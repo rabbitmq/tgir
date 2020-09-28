@@ -1,0 +1,10 @@
+# We only use quorum queues, they go straight to disk, paging messages to disk doesn't make sense in this context, disable it
+#
+# https://www.rabbitmq.com/configure.html
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vm-memory-high-watermark-paging-ratio
+data:
+  value: |
+    vm_memory_high_watermark_paging_ratio = 0.99

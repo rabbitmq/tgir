@@ -1,0 +1,10 @@
+# Set RabbitMQ cluster name to a short & friendly name
+#
+# https://www.rabbitmq.com/configure.html
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-name
+data:
+  value: |
+    cluster_name = reliable-rabbit

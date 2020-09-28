@@ -1,3 +1,6 @@
+# Configure RabbitMQ cluster formation to use K8S
+#
+# https://www.rabbitmq.com/cluster-formation.html
 apiVersion: v1
 kind: ConfigMap
 metadata:

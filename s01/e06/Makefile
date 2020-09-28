@@ -6,8 +6,8 @@ CLUSTER := $(TGIR)-$(USER)
 # Find out what versions are available: make k8s-versions
 CLUSTER_VERSION ?= 1.17.9-gke.1504
 CLUSTE_RELEASES ?= rapid
-CLUSTER_NODE_TYPE ?= n2-standard-2
-CLUSTER_NODES_PER_ZONE ?= 1
+CLUSTER_NODE_TYPE ?= n2-standard-4
+CLUSTER_NODES_PER_ZONE ?= 2
 
 # You may want to overwrite this with your GCP project, e.g. export GCP_PROJECT=my-project-name
 GCP_PROJECT ?= cf-rabbitmq-core
@@ -110,9 +110,8 @@ rabbitmq: | $(KUBECONFIG) generate-secrets ## Deploy a RabbitMQ cluster on K8S
 
 .PHONY: rabbitmq-rm
 rabbitmq-rm: | $(KUBECONFIG) ## Delete RabbitMQ cluster and all associated resources
-
-.PHONY: rabbitmq-workload
-rabbitmq-workload: | $(KUBECONFIG) ## Deploy a RabbitMQ publishing & consuming workload
+	$(KUBECTL) delete --filename $(CURDIR)/k8s --wait \
+	; $(KUBECTL) delete pvc --all --wait
 
 .PHONY: all
 all: k8s rabbitmq ## Create K8S cluster & deploy RabbitMQ

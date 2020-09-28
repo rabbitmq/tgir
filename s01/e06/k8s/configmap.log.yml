@@ -1,0 +1,10 @@
+# Set the log level to debug, for extra insights
+#
+# https://www.rabbitmq.com/configure.html
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: log
+data:
+  value: |
+    log.file.level = debug

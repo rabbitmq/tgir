@@ -2,7 +2,7 @@
 
 * Proposed via [rabbitmq/tgir#13](https://github.com/rabbitmq/tgir/issues/13)
 * Hosted by [@gerhardlazu](https://twitter.com/gerhardlazu)
-* Published on: 2020-09-25
+* Published on: 2020-09-30
 
 <a href="https://www.youtube.com/watch?v=TGIRS01E06" target="_blank"><img src="video.jpg" border="50" /></a>
 
