@@ -8,4 +8,4 @@
 - [S01E03: How to contribute to RabbitMQ? Part 1. 2020-03-27](s01/e03/README.md)
 - [S01E04: How to contribute to RabbitMQ? Part 2. 2020-04-30](s01/e04/README.md)
 - [S01E05: I want to run RabbitMQ on K8S - Where do I start? 2020-05-29](s01/e05/README.md)
-- [S01E06: How to run a RabbitMQ cluster reliably on K8S? 2020-09-30](s01/e06/README.md)
+- [S01E06: How to run a reliable RabbitMQ on K8S 2020-09-30](s01/e06/README.md)
