@@ -1,13 +1,14 @@
-# TGIR S01E06: How to run a RabbitMQ cluster reliably on K8S?
+# TGIR S01E06: How to run a reliable RabbitMQ on K8S
 
 * Proposed via [rabbitmq/tgir#13](https://github.com/rabbitmq/tgir/issues/13)
 * Hosted by [@gerhardlazu](https://twitter.com/gerhardlazu)
 * Published on: 2020-09-30
 
-<a href="https://www.youtube.com/watch?v=TGIRS01E06" target="_blank"><img src="video.jpg" border="50" /></a>
+<a href="https://www.youtube.com/watch?v=I02oKJlOnR4" target="_blank"><img src="video.jpg" border="50" /></a>
 
 You have a single RabbitMQ node running on Kubernetes (K8S).
-[S01E05](https://github.com/rabbitmq/tgir/tree/S01E05/s01/e05) covered the getting started part well, and [Deploying RabbitMQ to Kubernetes: What’s Involved?](https://www.rabbitmq.com/blog/2020/08/10/deploying-rabbitmq-to-kubernetes-whats-involved/) blog post added more detail.
+[S01E05](https://github.com/rabbitmq/tgir/tree/S01E05/s01/e05) covered the getting started part well.
+[Deploying RabbitMQ to Kubernetes: What’s Involved?](https://www.rabbitmq.com/blog/2020/08/10/deploying-rabbitmq-to-kubernetes-whats-involved/) blog post added more detail.
 
 With the RabbitMQ on K8S basics understood, it's time to deploy a RabbitMQ cluster and tackle more advanced topics:
 
@@ -22,7 +23,7 @@ With the RabbitMQ on K8S basics understood, it's time to deploy a RabbitMQ clust
 
 ## MAKE TARGETS
 
-`
+```
 all                         Create K8S cluster & deploy RabbitMQ
 clean                       Delete the RabbitMQ cluster and all associated resources, then delete the K8S cluster on GKE that we have deployed
 disks                       List all disks
@@ -45,5 +46,5 @@ simulate-loss-of-all        Simulate losing all instances across all 3 zones
 simulate-loss-of-majority   Simulate losing all instances in 2 zones (majority)
 simulate-loss-of-minority   Simulate losing all instances in 1 zone (minority)
 watch-instances             Watch all instances
-watch-nodes                 Watch all K8S nodes``
+watch-nodes                 Watch all K8S nodes
 ```
