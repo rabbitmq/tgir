@@ -23,10 +23,6 @@ GCP_PROJECT ?= cf-rabbitmq-core
 # You may want to overwrite this with your preferred GCP zone, e.g. export GCP_ZONE=us-east1-b
 GCP_ZONE ?= europe-west2-b
 
-GCLOUD ?= /usr/local/bin/gcloud
-$(GCLOUD):
-	brew cask install google-cloud-sdk
-
 .PHONY: deps
 deps: $(GCLOUD) ## Resolve all dependencies
 	$(GCLOUD) auth login \

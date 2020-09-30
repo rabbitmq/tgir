@@ -1,0 +1,10 @@
+# Change the default 50MB free disk limit alarm to a production-safe value, relative to the memory available
+#
+# https://www.rabbitmq.com/configure.html
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: disk-free-limit
+data:
+  value: |
+    disk_free_limit.relative = 1.0

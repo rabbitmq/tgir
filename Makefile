@@ -8,6 +8,9 @@ YELLOW := \033[1;33m
 BOLD := \033[1m
 NORMAL := \033[0m
 
+XDG_CONFIG_HOME := $(CURDIR)/.config
+export XDG_CONFIG_HOME
+
 
 
 ### DEPS ###
@@ -58,6 +61,53 @@ $(GCLOUD):
 	$(error Please install gcloud: https://cloud.google.com/sdk/docs/downloads-apt-get)
 endif
 
+ifeq ($(PLATFORM),Darwin)
+YQ ?= /usr/local/bin/yq
+$(YQ):
+	brew install yq
+else
+YQ ?= /usr/bin/yq
+$(YQ):
+	$(error Please install yq: https://github.com/mikefarah/yq#install)
+endif
+.PHONY: yq
+yq: $(YQ)
+
+ifeq ($(PLATFORM),Darwin)
+BAT ?= /usr/local/bin/bat
+$(BAT):
+	brew install bat
+else
+BAT ?= /usr/bin/bat
+$(BAT):
+	$(error Please install bat: https://github.com/sharkdp/bat)
+endif
+.PHONY: bat
+bat: $(BAT)
+
+ifeq ($(PLATFORM),Darwin)
+K9S ?= /usr/local/bin/k9s
+$(K9S):
+	brew install derailed/k9s/k9s
+else
+K9S ?= /usr/bin/k9s
+$(K9S):
+	$(error Please install k9s: https://github.com/derailed/k9s#installation)
+endif
+
+ifeq ($(PLATFORM),Darwin)
+# Do not use kubectl installed by Docker for Desktop, this will typically be an older version than kubernetes-cli
+# Use the latest installed kubernetes-cli
+KUBECTL ?= $(lastword $(wildcard /usr/local/Cellar/kubernetes-cli/*/bin/kubectl))
+$(KUBECTL):
+	brew install kubernetes-cli
+else
+KUBECTL ?= /usr/bin/kubectl
+$(KUBECTL):
+	$(error Please install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl)
+endif
+.PHONY: kubectl
+kubectl: $(KUBECTL)
 
 
 
@@ -68,11 +118,11 @@ endif
 
 .PHONY: help
 help:
-	@awk -F": |##" '/^[^\.][0-9a-zA-Z\._\-\%]+:+.+##.+$$/ { printf "\033[36m%-26s\033[0m %s\n", $$1, $$3 }' $(MAKEFILE_LIST) \
+	@awk -F':+ |##' '/^[^\.][0-9a-zA-Z\._\-%]+:+.+##.+$$/ { printf "\033[36m%-26s\033[0m %s\n", $$1, $$3 }' $(MAKEFILE_LIST) \
 	| sort
 
 define MAKE_TARGETS
-  awk -F: '/^[^\.%\t\_][0-9a-zA-Z\._\-\%]*:+.*$$/ { printf "%s\n", $$1 }' $(MAKEFILE_LIST)
+  awk -F':+' '/^[^\.%\t\_][0-9a-zA-Z\._\-\%]*:+.*$$/ { printf "%s\n", $$1 }' $(MAKEFILE_LIST)
 endef
 define BASH_AUTOCOMPLETE
   complete -W \"$$($(MAKE_TARGETS) | sort | uniq)\" make gmake m
@@ -112,6 +162,10 @@ endif
 
 .env:
 	ln -sf ../../.env .env
+
+.PHONY: env
+env::
+	@true
 
 FPS ?= 30
 FFMPEG_VF = -vf "fps=$(FPS)

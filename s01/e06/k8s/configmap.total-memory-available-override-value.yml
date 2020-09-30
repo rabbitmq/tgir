@@ -1,0 +1,11 @@
+# Explicitly define available memory, Erlang/RabbitMQ do not understand cgroups for memory
+# Set to the same value as the pod limit
+#
+# https://www.rabbitmq.com/configure.html
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: total-memory-available-override-value
+data:
+  value: |
+    total_memory_available_override_value = 12GB

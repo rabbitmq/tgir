@@ -1,0 +1,12 @@
+# Place newly defined queues on RabbitMQ nodes with the least number of queues
+# This ensures that queue-related load is distributed evenly across the cluster
+#
+# https://www.rabbitmq.com/ha.html#queue-master-location
+# https://www.rabbitmq.com/configure.html
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: queue-master-locator
+data:
+  value: |
+    queue_master_locator = min-masters

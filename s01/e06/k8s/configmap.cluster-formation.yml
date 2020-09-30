@@ -1,0 +1,13 @@
+# Configure RabbitMQ cluster formation to use K8S
+#
+# https://www.rabbitmq.com/cluster-formation.html
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-formation
+data:
+  value: |
+    cluster_formation.peer_discovery_backend = k8s
+    cluster_formation.k8s.host = kubernetes.default.svc.cluster.local
+    cluster_formation.k8s.address_type = hostname
+    cluster_formation.k8s.service_name = reliable-rabbit

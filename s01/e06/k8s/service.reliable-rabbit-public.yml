@@ -1,0 +1,55 @@
+# This is the public service, meaning a load balancer to which RabbitMQ clients connect.
+# Notice that we expose all ports for the protocols that RabbitMQ supports,
+# including those that require specific rabbitmq plugins to be enabled.
+#
+# https://kubernetes.io/docs/concepts/services-networking/service/
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    app: rabbitmq
+    type: LoadBalancer
+  name: reliable-rabbit-public
+spec:
+  # https://www.rabbitmq.com/networking.html
+  ports:
+  - name: amqp-ssl
+    protocol: TCP
+    port: 5671
+  - name: amqp
+    protocol: TCP
+    port: 5672
+  - name: http-ssl
+    protocol: TCP
+    port: 15671
+  - name: http
+    protocol: TCP
+    port: 15672
+  - name: mqtt
+    protocol: TCP
+    port: 1883
+  - name: mqtt-ssl
+    protocol: TCP
+    port: 8883
+  - name: mqtt-web
+    protocol: TCP
+    port: 15675
+  - name: prometheus-ssl
+    protocol: TCP
+    port: 15691
+  - name: prometheus
+    protocol: TCP
+    port: 15692
+  - name: stomp
+    protocol: TCP
+    port: 61613
+  - name: stomp-ssl
+    protocol: TCP
+    port: 61614
+  - name: stomp-web
+    protocol: TCP
+    port: 15674
+
+  selector:
+    app: rabbitmq
+  type: LoadBalancer

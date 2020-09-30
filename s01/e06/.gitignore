@@ -1,0 +1,2 @@
+.config
+k8s/secret*

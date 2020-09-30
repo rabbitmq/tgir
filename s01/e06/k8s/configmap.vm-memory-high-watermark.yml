@@ -1,0 +1,10 @@
+# Set the memory alarm to 70% of available memory, it's optimal for this workload
+#
+# https://www.rabbitmq.com/production-checklist.html#resource-limits-ram
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vm-memory-high-watermark
+data:
+  value: |
+    vm_memory_high_watermark.relative = 0.7

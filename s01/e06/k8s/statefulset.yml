@@ -1,0 +1,321 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rabbitmq
+spec:
+  podManagementPolicy: OrderedReady
+  # We want 3 RabbitMQ nodes
+  replicas: 3
+  selector:
+    matchLabels:
+      app: rabbitmq
+  # This service is responsible for:
+  # * the network identity of the set
+  # * cluster formation
+  #
+  # Pod hostnames are set using the following naming convention:
+  #   podName.serviceName.default.svc.cluster.local
+  serviceName: reliable-rabbit
+  volumeClaimTemplates:
+  - metadata:
+      name: rabbitmq-data
+    spec:
+      storageClassName: ssd
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: "100Gi"
+  template:
+    metadata:
+      annotations:
+        prometheus.io/port: "15692"
+        prometheus.io/scrape: "true"
+      name: rabbitmq
+      labels:
+        app: rabbitmq
+    spec:
+      # We want don't want to run more than 1 RabbitMQ node on 1 K8S node.
+      # This is because when 1 K8S node becomes unavailable (maybe it's getting upgraded), we would lose multiple RabbitMQ nodes, which we can't afford in a 3-node cluster.
+      # It would also mean multiple RabbitMQ nodes competing for the resources of a single K8S node, which is less than ideal from a performance perspective.
+      #
+      # https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+      # https://kubernetes.io/docs/tutorials/stateful-application/zookeeper/#tolerating-node-failure
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: "app"
+                    operator: In
+                    values:
+                    - rabbitmq
+              topologyKey: "kubernetes.io/hostname"
+      # Lastly, we want to spread RabbitMQ nodes across all zones, so that if one zone fails, only a minority of RabbitMQ nodes will be affected (1/3 in this case).
+      # https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: zone
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app: rabbitmq
+      containers:
+      - name: rabbitmq
+        # https://hub.docker.com/_/rabbitmq/
+        image: rabbitmq:3.8.8-management
+        command:
+        - "rabbitmq-server"
+        env:
+        - name: MY_POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: MY_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: K8S_SERVICE_NAME
+          value: reliable-rabbit
+        - name: RABBITMQ_USE_LONGNAME
+          value: "true"
+        - name: RABBITMQ_NODENAME
+          value: rabbit@$(MY_POD_NAME).$(K8S_SERVICE_NAME).$(MY_POD_NAMESPACE)
+        - name: K8S_HOSTNAME_SUFFIX
+          value: .$(K8S_SERVICE_NAME).$(MY_POD_NAMESPACE)
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - /bin/bash
+              - -exec
+              - |-
+                ten_minutes=600
+                rabbitmq-upgrade await_online_quorum_plus_one --timeout $ten_minutes
+                rabbitmq-upgrade await_online_synchronized_mirror --timeout $ten_minutes
+        volumeMounts:
+        - name: erlang-cookie-only-readable-by-rabbitmq
+          mountPath: /var/lib/rabbitmq
+        - name: enabled-plugins
+          mountPath: /etc/rabbitmq/enabled_plugins
+          subPath: enabled_plugins
+        - name: rabbitmq-data
+          # TODO: rename mnesia to data
+          mountPath: /var/lib/rabbitmq/mnesia
+        - name: rabbitmq-confd
+          mountPath: /etc/rabbitmq/conf.d
+        # https://www.rabbitmq.com/networking.html
+        ports:
+        - name: epmd
+          containerPort: 4369
+          protocol: TCP
+        - name: amqp-ssl
+          containerPort: 5671
+          protocol: TCP
+        - name: amqp
+          containerPort: 5672
+          protocol: TCP
+        - name: erlang
+          containerPort: 25672
+          protocol: TCP
+        - name: http-ssl
+          containerPort: 15671
+          protocol: TCP
+        - name: http
+          containerPort: 15672
+          protocol: TCP
+        - name: mqtt
+          containerPort: 1883
+          protocol: TCP
+        - name: mqtt-ssl
+          containerPort: 8883
+          protocol: TCP
+        - name: mqtt-web
+          containerPort: 15675
+          protocol: TCP
+        - name: prometheus-ssl
+          containerPort: 15691
+          protocol: TCP
+        - name: prometheus
+          containerPort: 15692
+          protocol: TCP
+        - name: stomp
+          containerPort: 61613
+          protocol: TCP
+        - name: stomp-ssl
+          containerPort: 61614
+          protocol: TCP
+        - name: stomp-web
+          containerPort: 15674
+          protocol: TCP
+        # We use a startup probe to determine when the RabbitMQ runtime, Erlang, has started.
+        # We check every 10 seconds that: "the node OS process is up (the Erlang VM), registered with EPMD and CLI tools can authenticate with it"
+        # We check for up to 5 minutes, or 30 times, as sometimes RabbitMQ could be performing CPU-intensive operations, and starting another Erlang VM to check on RabbitMQ may create too much CPU contention.
+        # While this is rare and extreme, it does happen, so we are being extra persistent.
+        #
+        # While the startup probe runs, both the liveness and the readiness probes are disabled.
+        # As a matter of fact, we don't use a livesness probe at all because this is more likely to take down an overloaded RabbitMQ node than solve and actual deadlock.
+        #
+        # Cloud environments where CPU time can be sliced (a.k.a. limited) in milliseconds is especially bad for runtimes that are natively multi-core.
+        # These have many optimisations that are based on the fact that multiple cores are available to them, and CPU limits (and even sharing) can have disastrous side-effects.
+        #
+        # We let Erlang handle the healthiness of the node, and only inform K8S when it has started via the ping command.
+        #
+        # * https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#when-should-you-use-a-startup-probe
+        # * https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#define-startup-probes
+        # * https://blog.colinbreck.com/kubernetes-liveness-and-readiness-probes-how-to-avoid-shooting-yourself-in-the-foot/
+        # * https://medium.com/swlh/fantastic-probes-and-how-to-configure-them-fef7e030bd2f
+        startupProbe:
+          exec:
+            command:
+            - "rabbitmq-diagnostics"
+            - "ping"
+          failureThreshold: 30
+          periodSeconds: 10
+          timeoutSeconds: 9
+        # We use the check_port_connectivity command to determine when RabbitMQ has created listening TCP sockets and is ready to serve traffic.
+        # If we were to add it to the service before this is true, client requests will fail.
+        readinessProbe:
+          exec:
+            command:
+            - "rabbitmq-diagnostics"
+            - "check_port_connectivity"
+          initialDelaySeconds: 10
+          periodSeconds: 30
+          timeoutSeconds: 15
+          successThreshold: 1
+          failureThreshold: 3
+        resources:
+          # Request & limit all but 1 CPU core for RabbitMQ.
+          # Leaving 1 CPU core for other things that may run on this node (e.g. log aggregators, metric collectors, etc.)
+          # Since Erlang will spin up 1 Erlang VM per core, we don't assign less than full cores.
+          # If we did, any Erlang optimisations would be contradicted by kernel throttling, and we would end up with a mess.
+          #
+          # Reqquest & limit to 75% of the available memory.
+          # While we are leaving a few GBs on the table, other things may need it, and we don't want to run at the very edge of what is available.
+          # This is a good article that explains why that is: https://sysdig.com/blog/kubernetes-limits-requests/
+          #
+          # These limits are specific to the instance types that we provision, n2-standard-4: https://cloud.google.com/compute/all-pricing#n2_machine_types
+          limits:
+            cpu: "3"
+            memory: 12G
+          requests:
+            cpu: "3"
+            memory: 12G
+      serviceAccount: rabbitmq
+      volumes:
+      - name: erlang-cookie
+        secret:
+          secretName: erlang-cookie
+      - name: erlang-cookie-only-readable-by-rabbitmq
+        emptyDir: {}
+      - name: enabled-plugins
+        configMap:
+          name: enabled-plugins
+          items:
+          - key: value
+            path: enabled_plugins
+      - name: rabbitmq-data
+        persistentVolumeClaim:
+          claimName: rabbitmq-data
+      - name: rabbitmq-confd
+        projected:
+          sources:
+          - configMap:
+              name: cluster-formation
+              items:
+              - key: value
+                path: cluster_formation.conf
+          - configMap:
+              name: cluster-name
+              items:
+              - key: value
+                path: cluster_name.conf
+          - secret:
+              name: default-user
+              items:
+              - key: value
+                path: default_user.conf
+          - secret:
+              name: default-pass
+              items:
+              - key: value
+                path: default_pass.conf
+          - configMap:
+              name: disk-free-limit
+              items:
+              - key: value
+                path: disk_free_limit.conf
+          - configMap:
+              name: log
+              items:
+              - key: value
+                path: log.conf
+          - configMap:
+              name: queue-master-locator
+              items:
+              - key: value
+                path: queue_master_locator.conf
+          - configMap:
+              name: total-memory-available-override-value
+              items:
+              - key: value
+                path: total_memory_available_override_value.conf
+          - configMap:
+              name: vm-memory-high-watermark-paging-ratio
+              items:
+              - key: value
+                path: vm_memory_high_watermark_paging_ratio.conf
+          - configMap:
+              name: vm-memory-high-watermark
+              items:
+              - key: value
+                path: vm_memory_high_watermark.conf
+
+      # The RabbitMQ container runs as the rabbitmq user, uid 999, meaning it's a non-root container
+      # We reflect this in the pod's security context
+      securityContext:
+        fsGroup: 999
+        runAsUser: 999
+        runAsGroup: 999
+
+      # Default pod termination grace period is 30 seconds
+      #
+      # We give RabbitMQ up to 1 hour to perform the following:
+      # * signal queue followers from other nodes to become queue leaders
+      # * gracefully disconnect all clients
+      # * stop listening sockets
+      # * save all persistent state to disk
+      # * shutdown durable local queues gracefully
+      # * shutdown message stores gracefully
+      # * stop gracefully
+      #
+      # While RabbitMQ is expected to stop much sooner than this,
+      # if it takes more than this time interval, it's likely that something is wrong and it's OK to kill it.
+      terminationGracePeriodSeconds: 3600
+
+      # The Erlang cookie is a shared secret used by all nodes in a cluster.
+      # It has to be the same on all nodes, otherwise these will not be able to authenticate with one another.
+      #
+      # A RabbitMQ node will fail to start if the Erlang cookie is not owned exclusively by the system user that runs rabbitmq-server.
+      # As this cookie is coming from a secret mounted as a file, we cannot define user ownership, or exact file permission (mode & defaultMode don't work as expected on K8S v1.17)
+      # The solution is to copy the mounted file (read-only because it's a secret) to a place where:
+      # * permission can be set to 400
+      # * available to the rabbitmq container (shared empty dir mount)
+      initContainers:
+      - name: make-erlang-cookie-only-readable-by-rabbitmq
+        image: rabbitmq:3.8.8-management
+        volumeMounts:
+        - name: erlang-cookie
+          mountPath: /var/run/secrets/erlang-cookie
+        - name: erlang-cookie-only-readable-by-rabbitmq
+          mountPath: /var/lib/rabbitmq
+        command:
+        - /bin/bash
+        - -exec
+        args:
+        - |-
+          cp -f /var/run/secrets/erlang-cookie/value /var/lib/rabbitmq/.erlang.cookie
+          chmod 400 /var/lib/rabbitmq/.erlang.cookie

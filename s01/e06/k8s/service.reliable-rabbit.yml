@@ -1,0 +1,24 @@
+# This is a headless service, meaning an internal service discovery mechanism.
+# It gives identity to RabbitMQ nodes, it is used for cluster formation and inter-node communication.
+#
+# https://kubernetes.io/docs/concepts/services-networking/service/#headless-services
+apiVersion: v1
+kind: Service
+metadata:
+  name: reliable-rabbit
+spec:
+  clusterIP: None
+  ports:
+  - name: epmd
+    port: 4369
+    protocol: TCP
+    targetPort: 4369
+  - name: erlang
+    port: 25672
+    protocol: TCP
+    targetPort: 25672
+  # https://github.com/rabbitmq/cluster-operator/issues/75
+  publishNotReadyAddresses: true
+  selector:
+    app: rabbitmq
+  type: ClusterIP
