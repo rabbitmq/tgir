@@ -40,6 +40,10 @@ $(KUBECONFIG): | $(KUBECTL) $(KUBECONFIG_DIR) $(CLOUDSDK_CONFIG)
 k9s: | $(K9S) $(KUBECONFIG) ## Interact with our K8S cluster via a terminal UI
 	$(K9S) --all-namespaces
 
+.PHONY: k9
+k9: | $(K9S) $(KUBECONFIG)
+	$(K9S) --namespace default --headless
+
 define ENV
 export GCP_PROJECT="$(GCP_PROJECT)"
 export GCP_REGION="$(GCP_REGION)"
@@ -89,7 +93,7 @@ k8s: | $(CLOUDSDK_CONFIG) ## Create a managed K8S cluster on GCP (GKE) - up to 4
 	   --enable-autoupgrade \
 	   --enable-autorepair \
 	   --max-surge-upgrade $(CLUSTER_NODES_PER_ZONE) \
-	   --max-unavailable-upgrade 1 \
+	   --max-unavailable-upgrade 0 \
 	   --metadata disable-legacy-endpoints=true \
 	   --no-enable-master-authorized-networks \
 	   --addons "HorizontalPodAutoscaling,HttpLoadBalancing"
@@ -154,7 +158,7 @@ k8s-operations: | $(CLOUDSDK_CONFIG) $(BAT)
 
 .PHONY: k8s-upgrade
 k8s-upgrade: | $(CLOUDSDK_CONFIG) ## Upgrade node pool to control plane version - up to 10 minutes
-	$(GCLOUD) container clusters upgrade $(CLUSTER)
+	time $(GCLOUD) container clusters upgrade $(CLUSTER)
 
 .PHONY: rabbitmq-upgrade
 rabbitmq-upgrade: | $(YQ) $(KUBECONFIG) ## Upgrade RabbitMQ
@@ -192,12 +196,14 @@ simulate-loss-of-all: | _delete_zone ## Simulate losing all instances across all
 .PHONY: rabbitmq-clients-rm
 rabbitmq-clients-rm: | $(KUBECONFIG) ## Delete all RabbitMQ clients
 	$(KUBECTL) delete --filename $(CURDIR)/k8s/deployment.publisher --wait \
-	; $(KUBECTL) delete --filename $(CURDIR)/k8s/deployment.consumer --wait
+	; $(KUBECTL) delete --filename $(CURDIR)/k8s/deployment.consumer --wait \
+	; true
 
 .PHONY: rabbitmq-rm
 rabbitmq-rm: | $(KUBECONFIG) ## Delete the RabbitMQ cluster and all associated resources that we have deployed
-	$(KUBECTL) delete --filename $(CURDIR)/k8s --wait \
-	; $(KUBECTL) delete pvc --all --wait
+	$(KUBECTL) delete --filename $(CURDIR)/k8s --force --wait \
+	; $(KUBECTL) delete pvc --all --force --wait \
+	; true
 
 .PHONY: all
 all: k8s rabbitmq ## Create K8S cluster & deploy RabbitMQ

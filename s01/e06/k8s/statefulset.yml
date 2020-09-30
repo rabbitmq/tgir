@@ -3,10 +3,6 @@ kind: StatefulSet
 metadata:
   name: rabbitmq
 spec:
-  # https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#pod-management-policies
-  # Needs to be changed to Parallel when all nodes stop,
-  # because the first node that gets started (0) may not be the one that stopped last.
-  # RabbitMQ requires last node that stopped to be started first.
   podManagementPolicy: OrderedReady
   # We want 3 RabbitMQ nodes
   replicas: 3
@@ -154,22 +150,33 @@ spec:
         - name: stomp-web
           containerPort: 15674
           protocol: TCP
-        # We use a startup probe to give RabbitMQ sufficient time to startup
-        # In this case, we check every 10 seconds that: "the node OS process is up (Erlang VM), registered with EPMD and CLI tools can authenticate with it"
+        # We use a startup probe to determine when the RabbitMQ runtime, Erlang, has started.
+        # We check every 10 seconds that: "the node OS process is up (the Erlang VM), registered with EPMD and CLI tools can authenticate with it"
+        # We check for up to 5 minutes, or 30 times, as sometimes RabbitMQ could be performing CPU-intensive operations, and starting another Erlang VM to check on RabbitMQ may create too much CPU contention.
+        # While this is rare and extreme, it does happen, so we are being extra persistent.
         #
-        # https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#when-should-you-use-a-startup-probe
-        # https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#define-startup-probes
+        # While the startup probe runs, both the liveness and the readiness probes are disabled.
+        # As a matter of fact, we don't use a livesness probe at all because this is more likely to take down an overloaded RabbitMQ node than solve and actual deadlock.
+        #
+        # Cloud environments where CPU time can be sliced (a.k.a. limited) in milliseconds is especially bad for runtimes that are natively multi-core.
+        # These have many optimisations that are based on the fact that multiple cores are available to them, and CPU limits (and even sharing) can have disastrous side-effects.
+        #
+        # We let Erlang handle the healthiness of the node, and only inform K8S when it has started via the ping command.
+        #
+        # * https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#when-should-you-use-a-startup-probe
+        # * https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#define-startup-probes
+        # * https://blog.colinbreck.com/kubernetes-liveness-and-readiness-probes-how-to-avoid-shooting-yourself-in-the-foot/
+        # * https://medium.com/swlh/fantastic-probes-and-how-to-configure-them-fef7e030bd2f
         startupProbe:
           exec:
             command:
             - "rabbitmq-diagnostics"
             - "ping"
-          failureThreshold: 60
+          failureThreshold: 30
           periodSeconds: 10
           timeoutSeconds: 9
-        # TODO: readinessProbe
-        # https://blog.colinbreck.com/kubernetes-liveness-and-readiness-probes-how-to-avoid-shooting-yourself-in-the-foot/
-        # https://medium.com/swlh/fantastic-probes-and-how-to-configure-them-fef7e030bd2f
+        # We use the check_port_connectivity command to determine when RabbitMQ has created listening TCP sockets and is ready to serve traffic.
+        # If we were to add it to the service before this is true, client requests will fail.
         readinessProbe:
           exec:
             command:

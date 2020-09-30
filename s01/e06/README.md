@@ -12,30 +12,38 @@ You have a single RabbitMQ node running on Kubernetes (K8S).
 With the RabbitMQ on K8S basics understood, it's time to deploy a RabbitMQ cluster and tackle more advanced topics:
 
 1. What are good liveness & readiness probes?
-2. How to configure RabbitMQ for availability during K8S upgrades?
-3. How to configure clients for handling a minority of RabbitMQ nodes becoming unavailable?
-4. What to expect when a majority of RabbitMQ nodes go away?
-5. What happens when all RabbitMQ nodes go away? [You will be surprised about this one, just as I have been](https://stackoverflow.com/questions/62355470/how-to-configure-a-rabbitmq-cluster-in-kubernetes-with-a-mounted-persistent-volu?stw=2).
+2. How to configure RabbitMQ for availability during RabbitMQ upgrades?
+3. How to configure RabbitMQ for availability during K8S upgrades?
+4. How to configure clients for handling a minority of RabbitMQ nodes becoming unavailable?
+5. What to expect when a majority of RabbitMQ nodes go away?
+6. What happens when all RabbitMQ nodes go away?
 
 
 
 ## MAKE TARGETS
 
-```
+`
 all                         Create K8S cluster & deploy RabbitMQ
-clean                       Delete RabbitMQ and all linked resources, then delete K8S cluster
-env                         Configure shell env - eval "$(make env)"
-k8s                         Create K8S cluster
-k8s-ls                      List K8S clusters
-k8s-node-sizes              Show all size options for K8S nodes
-k8s-regions                 Show all regions where K8S can be deployed
-k8s-rm                      Delete K8S cluster
-k9s                         Interact with K8S via terminal UI
-lbs                         Show all Load Balancers
-rabbitmq                    Deploy a RabbitMQ cluster on K8S
-rabbitmq-rm                 Delete RabbitMQ and all linked resources
-rabbitmq-workload           Deploy a RabbitMQ publishing & consuming workload
-resources                   Show all resources
-vms                         Show all VMs (aka Compute Engine instances)
-vols                        Show all Volumes
+clean                       Delete the RabbitMQ cluster and all associated resources, then delete the K8S cluster on GKE that we have deployed
+disks                       List all disks
+env                         Configure shell env - eval "$(make env)" OR source .env
+instances                   List all instances
+k8s                         Create a managed K8S cluster on GCP (GKE) - up to 4 minutes
+k8s-help                    List all options available when creating a managed K8S cluster on GCP (GKE)
+k8s-ls                      List all GKE clusters running on GCP
+k8s-rm                      Delete our GKE cluster
+k8s-upgrade                 Upgrade node pool to control plane version - up to 10 minutes
+k8s-versions                List all available K8S versions on GCP (GKE)
+k9s                         Interact with our K8S cluster via a terminal UI
+rabbitmq                    Deploy a reliable RabbitMQ cluster on GKE
+rabbitmq-clients            Deploy reliable RabbitMQ clients on our K8S cluster running in GCP
+rabbitmq-clients-rm         Delete all RabbitMQ clients
+rabbitmq-management         Open RabbitMQ Management in a browser
+rabbitmq-rm                 Delete the RabbitMQ cluster and all associated resources that we have deployed
+rabbitmq-upgrade            Upgrade RabbitMQ
+simulate-loss-of-all        Simulate losing all instances across all 3 zones
+simulate-loss-of-majority   Simulate losing all instances in 2 zones (majority)
+simulate-loss-of-minority   Simulate losing all instances in 1 zone (minority)
+watch-instances             Watch all instances
+watch-nodes                 Watch all K8S nodes``
 ```
