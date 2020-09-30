@@ -4,6 +4,7 @@ spec:
     spec:
       containers:
       - name: rabbitmq
+        # https://github.com/rabbitmq/rabbitmq-server/releases
         image: rabbitmq:3.8.9-management
       initContainers:
       - name: make-erlang-cookie-only-readable-by-rabbitmq
