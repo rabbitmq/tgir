@@ -1,5 +1,6 @@
 SHELL := bash# we want bash behaviour in all shell invocations
 PLATFORM := $(shell uname)
+platform = $(shell echo $(PLATFORM) | tr A-Z a-z)
 #
 # https://stackoverflow.com/questions/4842424/list-of-ansi-color-escape-sequences
 RED := \033[1;31m
@@ -10,6 +11,13 @@ NORMAL := \033[0m
 
 XDG_CONFIG_HOME := $(CURDIR)/.config
 export XDG_CONFIG_HOME
+
+THISFILE := $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))
+THISDIR := $(dir $(THISFILE))
+BASEDIR := $(abspath $(THISDIR))
+LOCAL_BIN := $(BASEDIR)/bin
+$(LOCAL_BIN):
+	mkdir -p $@
 
 
 
@@ -85,29 +93,58 @@ endif
 .PHONY: bat
 bat: $(BAT)
 
-ifeq ($(PLATFORM),Darwin)
-K9S ?= /usr/local/bin/k9s
-$(K9S):
-	brew install derailed/k9s/k9s
-else
-K9S ?= /usr/bin/k9s
-$(K9S):
-	$(error Please install k9s: https://github.com/derailed/k9s#installation)
-endif
+K9S_RELEASES := https://github.com/derailed/k9s/releases
+K9S_VERSION := 0.22.1
+K9S_BIN_DIR := k9s-$(K9S_VERSION)-$(platform)-x86_64
+K9S_URL := $(K9S_RELEASES)/download/v$(K9S_VERSION)/k9s_$(PLATFORM)_x86_64.tar.gz
+K9S := $(LOCAL_BIN)/$(K9S_BIN_DIR)/k9s
+$(K9S): | $(CURL) $(LOCAL_BIN)
+	$(CURL) --progress-bar --fail --location --output $(LOCAL_BIN)/$(K9S_BIN_DIR).tar.gz "$(K9S_URL)" \
+	&& mkdir -p $(K9S_BIN_DIR) && tar zxf $(K9S_BIN_DIR).tar.gz -C $(K9S_BIN_DIR) \
+	&& touch $(K9S) \
+	&& chmod +x $(K9S) \
+	&& $(K9S) version \
+	   | grep $(K9S_VERSION) \
+	&& ln -sf $(K9S) $(LOCAL_BIN)/k9s
+.PHONY: releases-k9s
+releases-k9s:
+	$(OPEN) $(K9S_RELEASES)
 
-ifeq ($(PLATFORM),Darwin)
-# Do not use kubectl installed by Docker for Desktop, this will typically be an older version than kubernetes-cli
-# Use the latest installed kubernetes-cli
-KUBECTL ?= $(lastword $(wildcard /usr/local/Cellar/kubernetes-cli/*/bin/kubectl))
-$(KUBECTL):
-	brew install kubernetes-cli
-else
-KUBECTL ?= /usr/bin/kubectl
-$(KUBECTL):
-	$(error Please install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl)
-endif
+KUBECTL_RELEASES := https://github.com/kubernetes/kubernetes/releases
+# K8S v1.18 is considered stable in October 2020, using latest version available
+KUBECTL_VERSION := 1.18.10
+KUBECTL_BIN := kubectl-$(KUBECTL_VERSION)-$(platform)-amd64
+KUBECTL_URL := https://storage.googleapis.com/kubernetes-release/release/v$(KUBECTL_VERSION)/bin/$(platform)/amd64/kubectl
+KUBECTL := $(LOCAL_BIN)/$(KUBECTL_BIN)
+$(KUBECTL): | $(CURL) $(LOCAL_BIN)
+	$(CURL) --progress-bar --fail --location --output $(KUBECTL) "$(KUBECTL_URL)"
+	touch $(KUBECTL)
+	chmod +x $(KUBECTL)
+	$(KUBECTL) version | grep $(KUBECTL_VERSION)
+	ln -sf $(KUBECTL) $(LOCAL_BIN)/kubectl
 .PHONY: kubectl
 kubectl: $(KUBECTL)
+
+JQ_RELEASES := https://github.com/stedolan/jq/releases
+JQ_VERSION := 1.6
+JQ_BIN := jq-$(JQ_VERSION)-$(platform)-x86_64
+JQ_URL := $(JQ_RELEASES)/download/jq-$(JQ_VERSION)/jq-$(platform)64
+ifeq ($(platform),darwin)
+JQ_URL := $(JQ_RELEASES)/download/jq-$(JQ_VERSION)/jq-osx-amd64
+endif
+JQ := $(LOCAL_BIN)/$(JQ_BIN)
+$(JQ): | $(CURL) $(LOCAL_BIN)
+	$(CURL) --progress-bar --fail --location --output $(JQ) "$(JQ_URL)" \
+	&& touch $(JQ) \
+	&& chmod +x $(JQ) \
+	&& $(JQ) --version \
+	   | grep $(JQ_VERSION) \
+	&& ln -sf $(JQ) $(LOCAL_BIN)/jq
+.PHONY: jq
+jq: $(JQ)
+.PHONY: releases-jq
+releases-jq:
+	$(OPEN) $(JQ_RELEASES)
 
 
 
