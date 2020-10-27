@@ -52,7 +52,15 @@ KUBECONFIG := $(KUBECONFIG_DIR)/config
 export KUBECONFIG
 $(KUBECONFIG_DIR):
 	@mkdir -p $(@)
-$(KUBECONFIG): | $(KUBECTL) $(KUBECONFIG_DIR)
+$(KUBECONFIG): | $(K3SUP) $(KUBECONFIG_DIR)
+	$(K3SUP) install \
+	  --skip-install \
+	  --ip $(EQUINIX_METAL_INSTANCE_IP) \
+	  --user $(SSH_USER) \
+	  --ssh-key $(SSH_PRIVATE_KEY) \
+	  --local-path $(KUBECONFIG)
+.PHONY: kubeconfig
+kubeconfig: $(KUBECONFIG)
 
 .PHONY: k9s
 k9s: | $(K9S) $(KUBECONFIG) ## Interact with our K3S instance via a terminal UI
