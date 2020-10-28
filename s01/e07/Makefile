@@ -41,9 +41,9 @@ $(K3SUP): | $(CURL) $(LOCAL_BIN)
 	ln -sf $(K3SUP) $(LOCAL_BIN)/k3sup
 .PHONY: k3sup
 k3sup: $(K3SUP)
-.PHONY: releases-ksup
-releases-ksup:
-	$(OPEN) $(KSUP_RELEASES)
+.PHONY: releases-k3sup
+releases-k3sup:
+	$(OPEN) $(K3SUP_RELEASES)
 
 JB_RELEASES := https://github.com/jsonnet-bundler/jsonnet-bundler/releases
 JB_VERSION := 0.4.0
