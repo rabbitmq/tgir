@@ -45,33 +45,6 @@ k3sup: $(K3SUP)
 releases-k3sup:
 	$(OPEN) $(K3SUP_RELEASES)
 
-JB_RELEASES := https://github.com/jsonnet-bundler/jsonnet-bundler/releases
-JB_VERSION := 0.4.0
-JB_BIN := jb-$(JB_VERSION)-$(platform)-amd64
-JB_URL := $(JB_RELEASES)/download/v$(JB_VERSION)/jb-$(platform)-amd64
-JB := $(LOCAL_BIN)/$(JB_BIN)
-$(JB): | $(CURL) $(LOCAL_BIN)
-	$(CURL) --progress-bar --fail --location --output $(JB) "$(JB_URL)"
-	touch $(JB)
-	chmod +x $(JB)
-	$(JB) --version 2>&1 | grep $(JB_VERSION)
-	ln -sf $(JB) $(LOCAL_BIN)/jb
-.PHONY: jb
-jb: $(JB)
-.PHONY: releases-jb
-releases-jb:
-	$(OPEN) $(JB_RELEASES)
-
-ifeq ($(PLATFORM),Darwin)
-JSONNET := /usr/local/bin/jsonnet
-$(JSONNET):
-	brew install go-jsonnet
-else
-JSONNET ?= /usr/bin/jsonnet
-$(JSONNET):
-	$(error Please install go-jsonnet: https://github.com/google/go-jsonnet)
-endif
-
 KUBECONFIG_DIR := $(XDG_CONFIG_HOME)/kubectl
 KUBECONFIG := $(KUBECONFIG_DIR)/config
 export KUBECONFIG
@@ -172,55 +145,23 @@ k3s: | $(K3SUP) ## Create a K3S instance on a Linux host - works on any Ubuntu V
 	  --local-path $(KUBECONFIG) \
 	  --k3s-channel $(K3S_CHANNEL)
 
-.PHONY: prom-stack
-prom-stack: | $(KUBECONFIG) k8s/kube-prometheus ## Integrate Prometheus & Grafana with K3S, including RabbitMQ dashboards
-	$(KUBECTL) apply --filename k8s/kube-prometheus/setup \
-	&& $(KUBECTL) apply --filename k8s/kube-prometheus
-
-.PHONY: prom-stack-rm
-prom-stack-rm: | $(KUBECONFIG) ## Delete Prometheus & Grafana from K3S
-	$(KUBECTL) delete --filename k8s/kube-prometheus --wait --force \
-	&& $(KUBECTL) delete --filename k8s/kube-prometheus/setup --wait --force
-
-# https://github.com/coreos/kube-prometheus#compatibility
-KUBE_PROMETHEUS_VERSION := release-0.6
-ifneq ($(filter $(K3S_CHANNEL), 1.18),)
-KUBE_PROMETHEUS_VERSION := master
-endif
-k8s/kube-prometheus: tmp/kube-prometheus/manifests
-	@printf "\n$(BOLD)Copy kube-prometheus@$(KUBE_PROMETHEUS_VERSION) bundle...$(NORMAL)\n"
-	cp -fr tmp/kube-prometheus/manifests $(@)/
-
-.PHONY: kube-prometheus-update
-kube-prometheus-update: | tmp/kube-prometheus/jsonnetfile.lock.json $(JB)
-	@printf "\n$(BOLD)Update kube-prometheus@$(KUBE_PROMETHEUS_VERSION)...$(NORMAL)\n"
-	cd tmp/kube-prometheus \
-	&& $(JB) update
-
-tmp/kube-prometheus/manifests: k8s/kube-prometheus.jsonnet | tmp/kube-prometheus/jsonnetfile.lock.json $(JSONNET) $(YQ)
-	@printf "\n$(BOLD)Generate kube-prometheus manifests...$(NORMAL)\n"
-	cd tmp/kube-prometheus \
-	&& rm -fr manifests \
-	&& mkdir -p manifests/setup \
-	&& $(JSONNET) \
-		  --jpath vendor \
-		  --multi manifests \
-		  $(CURDIR)/k8s/kube-prometheus.jsonnet \
-	   | while read file; do $(YQ) read --prettyPrint $$file > $$file.yml && rm $$file; done
-
-tmp/kube-prometheus/jsonnetfile.lock.json: | tmp/kube-prometheus/jsonnetfile.json $(JB)
-	@printf "\n$(BOLD)Install kube-prometheus@$(KUBE_PROMETHEUS_VERSION)...$(NORMAL)\n"
-	cd tmp/kube-prometheus \
-	&& $(JB) install github.com/coreos/kube-prometheus/jsonnet/kube-prometheus@$(KUBE_PROMETHEUS_VERSION)
-
-tmp/kube-prometheus/jsonnetfile.json: | tmp/kube-prometheus $(JB)
-	@printf "\n$(BOLD)Initialize Jsonnet bundle...$(NORMAL)\n"
-	cd tmp/kube-prometheus \
-	&& rm -fr * \
-	&& $(JB) init
-
-tmp/kube-prometheus:
-	mkdir -p $(@)
+# https://github.com/cablespaghetti/k3s-monitoring
+# + https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack
+#
+# Re: manifest_sorter.go:192: info: skipping unknown hook: "crd-install"
+# https://github.com/prometheus-community/helm-charts/issues/155#issuecomment-706743032
+#
+# helm search repo --versions prometheus-community/kube-prometheus-stack
+KUBE_PROMETHEUS_STACK_VERSION ?= 10.3.1
+.PHONY: k3s-monitoring
+k3s-monitoring: | $(KUBECONFIG) $(HELM) ## Integrate Prometheus & Grafana with K3S, including RabbitMQ dashboards
+	$(HELM) repo add prometheus-community https://prometheus-community.github.io/helm-charts
+	$(HELM) repo update
+	$(HELM) upgrade --install prometheus prometheus-community/kube-prometheus-stack \
+	  --version $(KUBE_PROMETHEUS_STACK_VERSION) \
+	  --values k8s/prometheus-operator/values.yml
+	$(KUBECTL) apply --filename k8s/prometheus-operator/traefik-servicemonitor.yml --filename k8s/prometheus-operator/traefik-dashboard.yml
+	$(KUBECTL) apply --filename k8s/prometheus-operator/rabbitmq-overview-dashboard.yml
 
 .PHONY: generate-secrets
 generate-secrets::
@@ -236,3 +177,15 @@ rabbitmq-quorum: | $(KUBECONFIG) ## Deploy a RabbitMQ cluster & workload that us
 
 .PHONY: rabbitmq-rm-%
 rabbitmq-rm-%: | $(KUBECONFIG) ## Delete one of the deployed RabbitMQ clusters & associated workloads: classic, quorum or stream
+
+.PHONY: tmp
+tmp::
+
+tmp/k3s-monitoring:
+	git clone https://github.com/cablespaghetti/k3s-monitoring $(@)
+tmp:: tmp/k3s-monitoring
+
+tmp/prometheus-community-helm-charts:
+	git clone https://github.com/prometheus-community/helm-charts $(@)
+tmp:: tmp/prometheus-community-helm-charts
+

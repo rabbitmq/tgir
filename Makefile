@@ -151,6 +151,24 @@ yq: $(YQ)
 releases-yq:
 	$(OPEN) $(YQ_RELEASES)
 
+HELM_RELEASES := https://github.com/helm/helm/releases
+HELM_VERSION := 3.4.0
+HELM_BIN_DIR := helm-v$(HELM_VERSION)-$(platform)-amd64
+HELM_URL := https://get.helm.sh/$(HELM_BIN_DIR).tar.gz
+HELM := $(LOCAL_BIN)/$(HELM_BIN_DIR)/$(platform)-amd64/helm
+$(HELM): | $(CURL) $(LOCAL_BIN)
+	$(CURL) --progress-bar --fail --location --output $(LOCAL_BIN)/$(HELM_BIN_DIR).tar.gz "$(HELM_URL)"
+	mkdir -p $(LOCAL_BIN)/$(HELM_BIN_DIR) && tar zxf $(LOCAL_BIN)/$(HELM_BIN_DIR).tar.gz -C $(LOCAL_BIN)/$(HELM_BIN_DIR)
+	touch $(HELM)
+	chmod +x $(HELM)
+	$(HELM) version | grep $(HELM_VERSION)
+	ln -sf $(HELM) $(LOCAL_BIN)/helm
+.PHONY: helm
+helm: $(HELM)
+.PHONY: releases-helm
+releases-helm:
+	$(OPEN) $(HELM_RELEASES)
+
 
 
 ### TARGETS ###
