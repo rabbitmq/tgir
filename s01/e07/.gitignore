@@ -1,3 +1,4 @@
 .config
-bin
 .envrc
+bin
+tmp

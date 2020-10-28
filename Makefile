@@ -70,18 +70,6 @@ $(GCLOUD):
 endif
 
 ifeq ($(PLATFORM),Darwin)
-YQ ?= /usr/local/bin/yq
-$(YQ):
-	brew install yq
-else
-YQ ?= /usr/bin/yq
-$(YQ):
-	$(error Please install yq: https://github.com/mikefarah/yq#install)
-endif
-.PHONY: yq
-yq: $(YQ)
-
-ifeq ($(PLATFORM),Darwin)
 BAT ?= /usr/local/bin/bat
 $(BAT):
 	brew install bat
@@ -145,6 +133,23 @@ jq: $(JQ)
 .PHONY: releases-jq
 releases-jq:
 	$(OPEN) $(JQ_RELEASES)
+
+YQ_RELEASES := https://github.com/mikefarah/yq/releases
+YQ_VERSION := 3.4.1
+YQ_BIN := yq-$(YQ_VERSION)-$(platform)-amd64
+YQ_URL := $(YQ_RELEASES)/download/$(YQ_VERSION)/yq_$(platform)_amd64
+YQ := $(LOCAL_BIN)/$(YQ_BIN)
+$(YQ): | $(CURL) $(LOCAL_BIN)
+	$(CURL) --progress-bar --fail --location --output $(YQ) "$(YQ_URL)"
+	touch $(YQ)
+	chmod +x $(YQ)
+	$(YQ) --version | grep $(YQ_VERSION)
+	ln -sf $(YQ) $(LOCAL_BIN)/yq
+.PHONY: yq
+yq: $(YQ)
+.PHONY: releases-yq
+releases-yq:
+	$(OPEN) $(YQ_RELEASES)
 
 
 

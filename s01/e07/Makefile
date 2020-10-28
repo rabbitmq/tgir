@@ -12,11 +12,7 @@ INSTANCE_NAME ?= $(TGIR)-$(USER)
 OS ?= ubuntu_20_04
 SSH_USER ?= root
 
-# As of October 26, 2020:
-# 1.17   - 1.17 latest available patch
-# stable - 1.18 latest available patch
-# latest - 1.19 latest available patch
-K3S_CHANNEL ?= stable
+K3S_CHANNEL ?= v1.18
 
 EQUINIX_METAL_RELEASES := https://github.com/packethost/packet-cli/releases
 EQUINIX_METAL_VERSION := 0.1.0
@@ -34,7 +30,6 @@ equinix-metal: $(EQUINIX_METAL)
 
 K3SUP_RELEASES := https://github.com/alexellis/k3sup/releases
 K3SUP_VERSION := 0.9.7
-https://github.com/alexellis/k3sup/releases/download/0.9.7/k3sup-darwin
 K3SUP_BIN := k3sup-$(K3SUP_VERSION)-$(platform)-amd64
 K3SUP_URL := $(K3SUP_RELEASES)/download/$(K3SUP_VERSION)/k3sup-$(platform)
 K3SUP := $(LOCAL_BIN)/$(K3SUP_BIN)
@@ -46,13 +41,43 @@ $(K3SUP): | $(CURL) $(LOCAL_BIN)
 	ln -sf $(K3SUP) $(LOCAL_BIN)/k3sup
 .PHONY: k3sup
 k3sup: $(K3SUP)
+.PHONY: releases-ksup
+releases-ksup:
+	$(OPEN) $(KSUP_RELEASES)
+
+JB_RELEASES := https://github.com/jsonnet-bundler/jsonnet-bundler/releases
+JB_VERSION := 0.4.0
+JB_BIN := jb-$(JB_VERSION)-$(platform)-amd64
+JB_URL := $(JB_RELEASES)/download/v$(JB_VERSION)/jb-$(platform)-amd64
+JB := $(LOCAL_BIN)/$(JB_BIN)
+$(JB): | $(CURL) $(LOCAL_BIN)
+	$(CURL) --progress-bar --fail --location --output $(JB) "$(JB_URL)"
+	touch $(JB)
+	chmod +x $(JB)
+	$(JB) --version 2>&1 | grep $(JB_VERSION)
+	ln -sf $(JB) $(LOCAL_BIN)/jb
+.PHONY: jb
+jb: $(JB)
+.PHONY: releases-jb
+releases-jb:
+	$(OPEN) $(JB_RELEASES)
+
+ifeq ($(PLATFORM),Darwin)
+JSONNET := /usr/local/bin/jsonnet
+$(JSONNET):
+	brew install go-jsonnet
+else
+JSONNET ?= /usr/bin/jsonnet
+$(JSONNET):
+	$(error Please install go-jsonnet: https://github.com/google/go-jsonnet)
+endif
 
 KUBECONFIG_DIR := $(XDG_CONFIG_HOME)/kubectl
 KUBECONFIG := $(KUBECONFIG_DIR)/config
 export KUBECONFIG
 $(KUBECONFIG_DIR):
 	@mkdir -p $(@)
-$(KUBECONFIG): | $(K3SUP) $(KUBECONFIG_DIR)
+$(KUBECONFIG): | $(K3SUP) $(KUBECTL) $(KUBECONFIG_DIR)
 	$(K3SUP) install \
 	  --skip-install \
 	  --ip $(EQUINIX_METAL_INSTANCE_IP) \
@@ -108,14 +133,14 @@ equinix-metal-ssh-key: | $(EQUINIX_METAL) ## Add SSH key that will be added to a
 
 .PHONY: equinix-metal
 equinix-metal: | $(EQUINIX_METAL) ## Create a Equinix Metal instance - optional step
-	$(EQUINIX_METAL) device create \
+	$(EQUINIX_METAL) server create \
 	  --facility $(DATA_CENTRE) \
 	  --hostname $(INSTANCE_NAME) \
 	  --operating-system $(OS) \
 	  --plan $(INSTANCE_TYPE) \
 	  --project-id $(PROJECT_ID)
 
-INSTANCES = $(EQUINIX_METAL) device get --project-id $(PROJECT_ID)
+INSTANCES = $(EQUINIX_METAL) server get --project-id $(PROJECT_ID)
 FIND_INSTANCE_ID = $(JQ) --raw-output '.[] | select(.hostname == "$(INSTANCE_NAME)") | .id'
 
 define EQUINIX_METAL_INSTANCE_IP
@@ -124,7 +149,7 @@ $$($(INSTANCES) --json 2>/dev/null \
 endef
 .PHONY: equinix-metal-rm
 equinix-metal-rm: | $(EQUINIX_METAL) $(JQ) ## Delete the Equinix Metal instance - this deletes everything
-	$(EQUINIX_METAL) device delete --id $$($(INSTANCES) --json 2>/dev/null | $(FIND_INSTANCE_ID))
+	$(EQUINIX_METAL) server delete --id $$($(INSTANCES) --json 2>/dev/null | $(FIND_INSTANCE_ID))
 
 equinix-metal-instances: | $(EQUINIX_METAL) ## List all Equinix Metal instances
 	$(INSTANCES) $(ARGS)
@@ -145,8 +170,52 @@ k3s: | $(K3SUP) ## Create a K3S instance on a Linux host - works on any Ubuntu V
 	  --user $(SSH_USER) \
 	  --ssh-key $(SSH_PRIVATE_KEY) \
 	  --local-path $(KUBECONFIG) \
-	  --k3s-extra-args '--no-deploy traefik' \
 	  --k3s-channel $(K3S_CHANNEL)
+
+.PHONY: prom-stack
+prom-stack: | $(KUBECONFIG) k8s/kube-prometheus ## Integrate Prometheus & Grafana with K3S, including RabbitMQ dashboards
+	$(KUBECTL) apply --filename k8s/kube-prometheus/setup \
+	&& $(KUBECTL) apply --filename k8s/kube-prometheus
+
+# https://github.com/coreos/kube-prometheus#compatibility
+KUBE_PROMETHEUS_VERSION := release-0.6
+ifneq ($(filter $(K3S_CHANNEL), 1.18),)
+KUBE_PROMETHEUS_VERSION := master
+endif
+k8s/kube-prometheus: tmp/kube-prometheus/manifests
+	@printf "\n$(BOLD)Copy kube-prometheus@$(KUBE_PROMETHEUS_VERSION) bundle...$(NORMAL)\n"
+	cp -fr tmp/kube-prometheus/manifests $(@)/
+
+.PHONY: kube-prometheus-update
+kube-prometheus-update: | tmp/kube-prometheus/jsonnetfile.lock.json $(JB)
+	@printf "\n$(BOLD)Update kube-prometheus@$(KUBE_PROMETHEUS_VERSION)...$(NORMAL)\n"
+	cd tmp/kube-prometheus \
+	&& $(JB) update
+
+tmp/kube-prometheus/manifests: k8s/kube-prometheus.jsonnet | tmp/kube-prometheus/jsonnetfile.lock.json $(JSONNET) $(YQ)
+	@printf "\n$(BOLD)Generate kube-prometheus manifests...$(NORMAL)\n"
+	cd tmp/kube-prometheus \
+	&& rm -fr manifests \
+	&& mkdir -p manifests/setup \
+	&& $(JSONNET) \
+		  --jpath vendor \
+		  --multi manifests \
+		  $(CURDIR)/k8s/kube-prometheus.jsonnet \
+	   | while read file; do $(YQ) read --prettyPrint $$file > $$file.yml && rm $$file; done
+
+tmp/kube-prometheus/jsonnetfile.lock.json: | tmp/kube-prometheus/jsonnetfile.json $(JB)
+	@printf "\n$(BOLD)Install kube-prometheus@$(KUBE_PROMETHEUS_VERSION)...$(NORMAL)\n"
+	cd tmp/kube-prometheus \
+	&& $(JB) install github.com/coreos/kube-prometheus/jsonnet/kube-prometheus@$(KUBE_PROMETHEUS_VERSION)
+
+tmp/kube-prometheus/jsonnetfile.json: | tmp/kube-prometheus $(JB)
+	@printf "\n$(BOLD)Initialize Jsonnet bundle...$(NORMAL)\n"
+	cd tmp/kube-prometheus \
+	&& rm -fr * \
+	&& $(JB) init
+
+tmp/kube-prometheus:
+	mkdir -p $(@)
 
 .PHONY: generate-secrets
 generate-secrets::
@@ -162,6 +231,3 @@ rabbitmq-quorum: | $(KUBECONFIG) ## Deploy a RabbitMQ cluster & workload that us
 
 .PHONY: rabbitmq-rm-%
 rabbitmq-rm-%: | $(KUBECONFIG) ## Delete one of the deployed RabbitMQ clusters & associated workloads: classic, quorum or stream
-
-.PHONY: kube-prometheus
-kube-prometheus: | $(KUBECONFIG) ## Integrate Prometheus & Grafana with K3S, including RabbitMQ dashboards
