@@ -177,6 +177,11 @@ prom-stack: | $(KUBECONFIG) k8s/kube-prometheus ## Integrate Prometheus & Grafan
 	$(KUBECTL) apply --filename k8s/kube-prometheus/setup \
 	&& $(KUBECTL) apply --filename k8s/kube-prometheus
 
+.PHONY: prom-stack-rm
+prom-stack-rm: | $(KUBECONFIG) ## Delete Prometheus & Grafana from K3S
+	$(KUBECTL) delete --filename k8s/kube-prometheus --wait --force \
+	&& $(KUBECTL) delete --filename k8s/kube-prometheus/setup --wait --force
+
 # https://github.com/coreos/kube-prometheus#compatibility
 KUBE_PROMETHEUS_VERSION := release-0.6
 ifneq ($(filter $(K3S_CHANNEL), 1.18),)
