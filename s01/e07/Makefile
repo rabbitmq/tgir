@@ -101,8 +101,7 @@ equinix-metal-ssh-key: | $(EQUINIX_METAL) ## Add SSH key that will be added to a
 	  printf "$(BOLD)SSH_PUBLIC_KEY$(NORMAL)$(RED) variable must be set to a public SSH key file path, e.g. ~/.ssh/id_rsa.pub$(NORMAL)\n" \
 	  ; exit 1 \
 	; fi
-	$(EQUINIX_METAL) ssh-key get $(SSH_PUBLIC_KEY_NAME) \
-	|| $(EQUINIX_METAL) ssh-key create --key "$$(cat $(SSH_PUBLIC_KEY))" --label $(USER)-$(SSH_PUBLIC_KEY_NAME)
+	$(EQUINIX_METAL) ssh-key create --key "$$(cat $(SSH_PUBLIC_KEY))" --label $(USER)-$(SSH_PUBLIC_KEY_NAME)
 
 .PHONY: equinix-metal
 equinix-metal: | $(EQUINIX_METAL) ## Create a Equinix Metal instance - optional step
