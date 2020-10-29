@@ -87,13 +87,13 @@ K9S_BIN_DIR := k9s-$(K9S_VERSION)-$(platform)-x86_64
 K9S_URL := $(K9S_RELEASES)/download/v$(K9S_VERSION)/k9s_$(PLATFORM)_x86_64.tar.gz
 K9S := $(LOCAL_BIN)/$(K9S_BIN_DIR)/k9s
 $(K9S): | $(CURL) $(LOCAL_BIN)
-	$(CURL) --progress-bar --fail --location --output $(LOCAL_BIN)/$(K9S_BIN_DIR).tar.gz "$(K9S_URL)" \
-	&& mkdir -p $(K9S_BIN_DIR) && tar zxf $(K9S_BIN_DIR).tar.gz -C $(K9S_BIN_DIR) \
-	&& touch $(K9S) \
-	&& chmod +x $(K9S) \
-	&& $(K9S) version \
-	   | grep $(K9S_VERSION) \
-	&& ln -sf $(K9S) $(LOCAL_BIN)/k9s
+	$(CURL) --progress-bar --fail --location --output $(LOCAL_BIN)/$(K9S_BIN_DIR).tar.gz "$(K9S_URL)"
+	mkdir -p $(LOCAL_BIN)/$(K9S_BIN_DIR) && tar zxf $(LOCAL_BIN)/$(K9S_BIN_DIR).tar.gz -C $(LOCAL_BIN)/$(K9S_BIN_DIR)
+	touch $(K9S)
+	chmod +x $(K9S)
+	$(K9S) version \
+	   | grep $(K9S_VERSION)
+	ln -sf $(K9S) $(LOCAL_BIN)/k9s
 .PHONY: releases-k9s
 releases-k9s:
 	$(OPEN) $(K9S_RELEASES)
