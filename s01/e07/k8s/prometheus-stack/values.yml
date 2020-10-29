@@ -1910,7 +1910,7 @@ prometheus:
     ##
     resources:
       limits:
-        cpu: "2"
+        cpu: "4"
         memory: "2Gi"
       requests:
         cpu: "500m"

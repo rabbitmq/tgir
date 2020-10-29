@@ -190,9 +190,11 @@ rabbitmq-classic: | $(KUBECONFIG) ## Deploy a RabbitMQ cluster & workload that u
 
 .PHONY: rabbitmq-quorum
 rabbitmq-quorum: | $(KUBECONFIG) ## Deploy a RabbitMQ cluster & workload that uses Quorum Queues
+	$(KUBECTL) apply --filename k8s/rabbitmq/quorum.yml
 
 .PHONY: rabbitmq-stream
-rabbitmq-quorum: | $(KUBECONFIG) ## Deploy a RabbitMQ cluster & workload that uses Stream Queues
+rabbitmq-stream: | $(KUBECONFIG) ## Deploy a RabbitMQ cluster & workload that uses Stream Queues
+	$(KUBECTL) apply --filename k8s/rabbitmq/stream.yml
 
 .PHONY: rabbitmq-rm-%
 rabbitmq-rm-%: | $(KUBECONFIG) ## Delete one of the deployed RabbitMQ clusters & associated workloads: classic, quorum or stream
