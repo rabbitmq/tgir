@@ -10,7 +10,7 @@ spec:
   resources:
     limits:
       memory: 1Gi
-      cpu: 1
+      cpu: 4
     requests:
       memory: 1Gi
       cpu: 1
@@ -63,11 +63,11 @@ spec:
         image: pivotalrabbitmq/stream-perf-test
         resources:
           limits:
-            cpu: "200m"
-            memory: "200Mi"
+            cpu: 2
+            memory: 500Mi
           requests:
-            cpu: "100m"
-            memory: "100Mi"
+            cpu: 1
+            memory: 250Mi
         command:
           - /bin/bash
           - -c
