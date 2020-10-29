@@ -1,0 +1,90 @@
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: stream
+# kubectl explain rmq.spec
+spec:
+  # https://hub.docker.com/_/rabbitmq?tab=tags
+  image: pivotalrabbitmq/rabbitmq-stream
+  replicas: 1
+  resources:
+    limits:
+      memory: 1Gi
+      cpu: 1
+    requests:
+      memory: 1Gi
+      cpu: 1
+  persistence:
+    storage: 10Gi
+  rabbitmq:
+    additionalConfig:
+      total_memory_available_override_value = 2GiB
+    additionalPlugins:
+      - rabbitmq_stream
+  override:
+    clientService:
+      spec:
+        ports:
+          - name: stream
+            protocol: TCP
+            port: 5555
+    statefulSet:
+      spec:
+        template:
+          spec:
+            containers:
+              - name: rabbitmq
+                ports:
+                  - containerPort: 5555
+                    name: stream
+                    protocol: TCP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stream-rabbitmq-perf-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stream-rabbitmq-perf-test
+  template:
+    metadata:
+      labels:
+        app: stream-rabbitmq-perf-test
+      annotations:
+        prometheus.io/port: "8080"
+        prometheus.io/scrape: "true"
+    spec:
+      containers:
+      - name: perftest
+        image: pivotalrabbitmq/stream-perf-test
+        resources:
+          limits:
+            cpu: "200m"
+            memory: "200Mi"
+          requests:
+            cpu: "100m"
+            memory: "100Mi"
+        command:
+          - /bin/bash
+          - -c
+        args:
+          - |-
+            java -Dio.netty.processId=1 -jar stream-perf-test.jar \
+              --addresses 10.42.0.52:5555 \
+              --username $RABBITMQ_USER \
+              --password $RABBITMQ_PASS
+        env:
+        - name: RABBITMQ_USER
+          valueFrom:
+            secretKeyRef:
+              name: stream-rabbitmq-default-user
+              key: username
+        - name: RABBITMQ_PASS
+          valueFrom:
+            secretKeyRef:
+              name: stream-rabbitmq-default-user
+              key: password
+        - name: RABBITMQ_SERVICE
+          value: stream-rabbitmq-client

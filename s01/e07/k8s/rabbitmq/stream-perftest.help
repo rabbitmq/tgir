@@ -1,0 +1,61 @@
+Tests the performance of stream queues in RabbitMQ.
+      [COMMAND...]           The COMMAND to display the usage help message for.
+                               Default: []
+  -a, --addresses=<addrs>[,<addrs>...]
+                             servers to connect to, e.g. localhost:5555,
+                               separated by commas
+                               Default: localhost:5555
+      -bs, --batch-size=<batchSize>
+                             size of a batch of published messages
+                               Default: 100
+  -c, --confirms=<confirms>  outstanding confirms
+                               Default: 10000
+      -cc, --codec=<codecClass>
+                             class of codec to use. Aliases: qpid, simple.
+                               Default: qpid
+      -ce, --commit-every=<commitEvery>
+                             the frequency of offset commit
+                               Default: 0
+      -cr, --credit=<credit> credit requested on acknowledgment
+                               Default: 1
+  -h, --help                 Show usage help for the help command and exit.
+      -icr, --initial-credit=<initialCredit>
+                             initial credit when registering a consumer
+                               Default: 10
+      -mlb, --max-length-bytes=<maxLengthBytes>
+                             max size of created streams
+                               Default: 20gb
+      -mss, --max-segment-size=<maxSegmentSize>
+                             max size of segments
+                               Default: 500mb
+  -o, --offset=<offset>      offset to start listening from. Valid values are
+                               'first', 'last', 'next', an unsigned long, or an
+                               ISO 8601 formatted timestamp (eg. 2020-06-03T07:
+                               45:54Z).
+                               Default: first
+  -p, --pre-declared         whether streams are already declared or not
+      -pw, --password=<password>
+                             password to use for connecting
+                               Default: guest
+  -r, --rate=<rate>          maximum rate of published messages
+                               Default: -1
+  -s, --size=<messageSize>   size of messages in bytes
+                               Default: 10
+      -ses, --sub-entry-size=<subEntrySize>
+                             number of messages packed into a normal message
+                               entry
+                               Default: 1
+      -sf, --summary-file    generate a summary file with metrics
+      -st, --streams=<streams>[,<streams>...]
+                             stream(s) to send to and consume from, separated
+                               by commas
+                               Default: stream1
+  -u, --username=<username>  username to use for connecting
+                               Default: guest
+  -v, --version              show version information
+  -x, --producers=<producers>
+                             number of producers
+                               Default: 1
+  -y, --consumers=<consumers>
+                             number of consumers
+                               Default: 1
