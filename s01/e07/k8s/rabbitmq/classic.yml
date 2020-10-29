@@ -67,12 +67,10 @@ spec:
               key: password
         - name: RABBITMQ_SERVICE
           value: classic-rabbitmq-client
-        - name: SERVERS_STARTUP_TIMEOUT
-          value: "30"
         - name: PRODUCERS
           value: "2"
         - name: VARIABLE_RATE
-          value: "10:30,40:30,20:30,0:30"
+          value: "10:30,60:30,20:30,0:60"
         - name: CONFIRM
           value: "10"
         - name: CONSUMERS
