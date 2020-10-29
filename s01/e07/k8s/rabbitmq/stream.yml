@@ -4,7 +4,7 @@ metadata:
   name: stream
 # kubectl explain rmq.spec
 spec:
-  # https://hub.docker.com/_/rabbitmq?tab=tags
+  # https://hub.docker.com/r/pivotalrabbitmq/rabbitmq-stream/tags
   image: pivotalrabbitmq/rabbitmq-stream
   replicas: 1
   resources:
@@ -58,6 +58,7 @@ spec:
     spec:
       containers:
       - name: perftest
+        # https://hub.docker.com/r/pivotalrabbitmq/stream-perf-test/tags
         image: pivotalrabbitmq/stream-perf-test
         resources:
           limits:
