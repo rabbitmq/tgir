@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: traefik-dashboard
   labels:
-     grafana_dashboard: "true"
+    grafana_dashboard: "true"
 data:
   traefik-dashboard.json: |-
     {

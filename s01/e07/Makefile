@@ -145,6 +145,9 @@ k3s: | $(K3SUP) ## Create a K3S instance on a Linux host - works on any Ubuntu V
 	  --local-path $(KUBECONFIG) \
 	  --k3s-channel $(K3S_CHANNEL)
 
+.PHONY: k3s-monitoring
+k3s-monitoring: k3s-prometheus-stack k3s-rabbitmq-grafana ## Integrate Prometheus & Grafana with K3S, including RabbitMQ dashboards
+
 # https://github.com/cablespaghetti/k3s-monitoring
 # + https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack
 #
@@ -153,18 +156,27 @@ k3s: | $(K3SUP) ## Create a K3S instance on a Linux host - works on any Ubuntu V
 #
 # helm search repo --versions prometheus-community/kube-prometheus-stack
 KUBE_PROMETHEUS_STACK_VERSION ?= 10.3.1
-.PHONY: k3s-monitoring
-k3s-monitoring: | $(KUBECONFIG) $(HELM) ## Integrate Prometheus & Grafana with K3S, including RabbitMQ dashboards
+.PHONY: k3s-prometheus-stack
+k3s-prometheus-stack: | $(KUBECONFIG) $(HELM)
 	$(HELM) repo add prometheus-community https://prometheus-community.github.io/helm-charts
-	$(HELM) repo update
-	$(HELM) upgrade --install prometheus prometheus-community/kube-prometheus-stack \
+	$(HELM) upgrade prometheus prometheus-community/kube-prometheus-stack \
+	  --install \
 	  --version $(KUBE_PROMETHEUS_STACK_VERSION) \
 	  --values k8s/prometheus-operator/values.yml
 	$(KUBECTL) apply --filename k8s/prometheus-operator/traefik-servicemonitor.yml --filename k8s/prometheus-operator/traefik-dashboard.yml
-	$(KUBECTL) apply --filename k8s/prometheus-operator/rabbitmq-overview-dashboard.yml
 
-.PHONY: generate-secrets
-generate-secrets::
+# https://grafana.com/orgs/rabbitmq
+.PHONY: k3s-rabbitmq-grafana
+k3s-rabbitmq-grafana: | $(KUBECONFIG)
+	$(KUBECTL) apply \
+	  --filename k8s/prometheus-operator/rabbitmq-overview-dashboard.yml \
+	  --filename k8s/prometheus-operator/rabbitmq-quorum-queues-raft-dashboard.yml \
+	  --filename k8s/prometheus-operator/rabbitmq-perftest.yml \
+	  --filename k8s/prometheus-operator/erlang-distribution-dashboard.yml \
+	  --filename k8s/prometheus-operator/erlang-memory-allocators.yml
+
+k3s-access-grafana: | $(KUBECONFIG) ## Access Grafana running in K3S
+	$(OPEN) http://$(EQUINIX_METAL_INSTANCE_IP)
 
 .PHONY: rabbitmq-classic
 rabbitmq-classic: | $(KUBECONFIG) ## Deploy a RabbitMQ cluster & workload that uses Classic Queues

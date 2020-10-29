@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: rabbitmq-overview-dashboard
   labels:
-     grafana_dashboard: "true"
+    grafana_dashboard: "true"
 data:
   rabbitmq-overview-dashboard.json: |-
     {

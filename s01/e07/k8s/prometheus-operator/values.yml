@@ -112,7 +112,7 @@ alertmanager:
 
   ## Deploy alertmanager
   ##
-  enabled: true
+  enabled: false
 
   ## Api that prometheus will use to communicate with alertmanager. Possible values are v1, v2
   ##
@@ -403,7 +403,7 @@ alertmanager:
           accessModes: ["ReadWriteOnce"]
           resources:
             requests:
-              storage: 1Gi
+              storage: "1Gi"
 
     ## 	The external URL the Alertmanager instances will be available under. This is necessary to generate correct URLs. This is necessary if Alertmanager is not served from root of a DNS name.	string	false
     ##
@@ -426,9 +426,13 @@ alertmanager:
     ## Define resources requests and limits for single Pods.
     ## ref: https://kubernetes.io/docs/user-guide/compute-resources/
     ##
-    resources: {}
-    # requests:
-    #   memory: 400Mi
+    resources:
+      limits:
+        cpu: "500m"
+        memory: "500Mi"
+      requests:
+        cpu: "100m"
+        memory: "100Mi"
 
     ## Pod anti-affinity can prevent the scheduler from placing Prometheus replicas on the same node.
     ## The default value "soft" means that the scheduler should *prefer* to not schedule two replica pods onto the same node but no guarantee is provided.
@@ -1639,7 +1643,7 @@ prometheus:
 
     ## Interval between consecutive scrapes.
     ##
-    scrapeInterval: ""
+    scrapeInterval: "15s"
 
     ## Interval between consecutive evaluations.
     ##
@@ -1825,11 +1829,11 @@ prometheus:
 
     ## How long to retain metrics
     ##
-    retention: 10d
+    retention: 7d
 
     ## Maximum size of metrics
     ##
-    retentionSize: ""
+    retentionSize: 8GB
 
     ## Enable compression of the write-ahead log using Snappy.
     ##
@@ -1907,10 +1911,10 @@ prometheus:
     resources:
       limits:
         cpu: "2"
-        memory: 2Gi
+        memory: "2Gi"
       requests:
-        cpu: "1"
-        memory: 2Gi
+        cpu: "500m"
+        memory: "500Mi"
 
     ## Prometheus StorageSpec for persistent data
     ## ref: https://github.com/prometheus-operator/prometheus-operator/blob/master/Documentation/user-guides/storage.md
@@ -1921,7 +1925,7 @@ prometheus:
           accessModes: ["ReadWriteOnce"]
           resources:
             requests:
-              storage: 10Gi
+              storage: "10Gi"
 
     # Additional volumes on the output StatefulSet definition.
     volumes: []
@@ -2124,7 +2128,7 @@ prometheus:
 
       ## Interval at which metrics should be scraped
       ##
-      #   interval: 30s
+      # interval: 30s
 
       ## HTTP path to scrape for metrics
       ##
