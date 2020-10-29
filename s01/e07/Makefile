@@ -162,24 +162,32 @@ k3s-prometheus-stack: | $(KUBECONFIG) $(HELM)
 	$(HELM) upgrade prometheus prometheus-community/kube-prometheus-stack \
 	  --install \
 	  --version $(KUBE_PROMETHEUS_STACK_VERSION) \
-	  --values k8s/prometheus-operator/values.yml
-	$(KUBECTL) apply --filename k8s/prometheus-operator/traefik-servicemonitor.yml --filename k8s/prometheus-operator/traefik-dashboard.yml
+	  --values k8s/prometheus-stack/values.yml
+	$(KUBECTL) apply \
+	  --filename k8s/prometheus-stack/traefik-servicemonitor.yml \
+	  --filename k8s/prometheus-stack/traefik-dashboard.yml
 
 # https://grafana.com/orgs/rabbitmq
 .PHONY: k3s-rabbitmq-grafana
 k3s-rabbitmq-grafana: | $(KUBECONFIG)
 	$(KUBECTL) apply \
-	  --filename k8s/prometheus-operator/rabbitmq-overview-dashboard.yml \
-	  --filename k8s/prometheus-operator/rabbitmq-quorum-queues-raft-dashboard.yml \
-	  --filename k8s/prometheus-operator/rabbitmq-perftest.yml \
-	  --filename k8s/prometheus-operator/erlang-distribution-dashboard.yml \
-	  --filename k8s/prometheus-operator/erlang-memory-allocators.yml
+	  --filename k8s/prometheus-stack/rabbitmq-overview-dashboard.yml \
+	  --filename k8s/prometheus-stack/rabbitmq-quorum-queues-raft-dashboard.yml \
+	  --filename k8s/prometheus-stack/rabbitmq-perftest.yml \
+	  --filename k8s/prometheus-stack/erlang-distribution-dashboard.yml \
+	  --filename k8s/prometheus-stack/erlang-memory-allocators.yml
 
 k3s-access-grafana: | $(KUBECONFIG) ## Access Grafana running in K3S
 	$(OPEN) http://$(EQUINIX_METAL_INSTANCE_IP)
 
+# https://github.com/rabbitmq/cluster-operator/releases
+RABBITMQ_OPERATOR_VERSION ?= 0.48.0
+k3s-rabbitmq-operator: | $(KUBECONFIG) ## Install RabbitMQ Cluster Operator into K3S
+	$(KUBECTL) apply --filename https://github.com/rabbitmq/cluster-operator/releases/download/$(RABBITMQ_OPERATOR_VERSION)/cluster-operator.yml
+
 .PHONY: rabbitmq-classic
 rabbitmq-classic: | $(KUBECONFIG) ## Deploy a RabbitMQ cluster & workload that uses Classic Queues
+	$(KUBECTL) apply --filename k8s/rabbitmq/classic.yml
 
 .PHONY: rabbitmq-quorum
 rabbitmq-quorum: | $(KUBECONFIG) ## Deploy a RabbitMQ cluster & workload that uses Quorum Queues
@@ -189,6 +197,7 @@ rabbitmq-quorum: | $(KUBECONFIG) ## Deploy a RabbitMQ cluster & workload that us
 
 .PHONY: rabbitmq-rm-%
 rabbitmq-rm-%: | $(KUBECONFIG) ## Delete one of the deployed RabbitMQ clusters & associated workloads: classic, quorum or stream
+	$(KUBECTL) delete --filename k8s/rabbitmq/$(*).yml --wait
 
 .PHONY: tmp
 tmp::
