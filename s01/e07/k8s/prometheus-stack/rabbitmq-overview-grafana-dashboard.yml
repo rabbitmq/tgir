@@ -1,11 +1,11 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: rabbitmq-overview-dashboard
+  name: rabbitmq-overview-grafana-dashboard
   labels:
     grafana_dashboard: "true"
 data:
-  rabbitmq-overview-dashboard.json: |-
+  rabbitmq-overview-grafana-dashboard.json: |-
     {
       "__requires": [
         {

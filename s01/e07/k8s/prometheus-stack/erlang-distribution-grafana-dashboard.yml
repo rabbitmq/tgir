@@ -1,11 +1,11 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: erlang-distribution-dashboard
+  name: erlang-distribution-grafana-dashboard
   labels:
     grafana_dashboard: "true"
 data:
-  erlang-distribution-dashboard.json: |-
+  erlang-distribution-grafana-dashboard.json: |-
     {
       "__requires": [
         {

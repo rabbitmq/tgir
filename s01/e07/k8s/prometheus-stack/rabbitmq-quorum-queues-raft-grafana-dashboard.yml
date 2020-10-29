@@ -1,11 +1,11 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: rabbitmq-quorum-queues-raft-dashboard
+  name: rabbitmq-quorum-queues-raft-grafana-dashboard
   labels:
     grafana_dashboard: "true"
 data:
-  rabbitmq-quorum-queues-raft-dashboard.json: |-
+  rabbitmq-quorum-queues-raft-grafana-dashboard.json: |-
     {
       "__requires": [
         {

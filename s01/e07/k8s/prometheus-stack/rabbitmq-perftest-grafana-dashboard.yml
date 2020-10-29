@@ -1,11 +1,11 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: rabbitmq-perftest
+  name: rabbitmq-perftest-grafana-dashboard
   labels:
     grafana_dashboard: "true"
 data:
-  rabbitmq-perftest.json: |-
+  rabbitmq-perftest-grafana-dashboard.json: |-
     {
       "__requires": [
         {

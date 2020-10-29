@@ -164,17 +164,17 @@ k3s-prometheus-stack: | $(KUBECONFIG) $(HELM)
 	  --values k8s/prometheus-stack/values.yml
 	$(KUBECTL) apply \
 	  --filename k8s/prometheus-stack/traefik-servicemonitor.yml \
-	  --filename k8s/prometheus-stack/traefik-dashboard.yml
+	  --filename k8s/prometheus-stack/traefik-grafana-dashboard.yml
 
 # https://grafana.com/orgs/rabbitmq
 .PHONY: k3s-rabbitmq-grafana
 k3s-rabbitmq-grafana: | $(KUBECONFIG)
 	$(KUBECTL) apply \
-	  --filename k8s/prometheus-stack/rabbitmq-overview-dashboard.yml \
-	  --filename k8s/prometheus-stack/rabbitmq-quorum-queues-raft-dashboard.yml \
-	  --filename k8s/prometheus-stack/rabbitmq-perftest.yml \
-	  --filename k8s/prometheus-stack/erlang-distribution-dashboard.yml \
-	  --filename k8s/prometheus-stack/erlang-memory-allocators.yml
+	  --filename k8s/prometheus-stack/rabbitmq-overview-grafana-dashboard.yml \
+	  --filename k8s/prometheus-stack/rabbitmq-quorum-queues-raft-grafana-dashboard.yml \
+	  --filename k8s/prometheus-stack/rabbitmq-perftest-grafana-dashboard.yml \
+	  --filename k8s/prometheus-stack/erlang-distribution-grafana-dashboard.yml \
+	  --filename k8s/prometheus-stack/erlang-memory-allocators-grafana-dashboard.yml
 
 k3s-access-grafana: | $(KUBECONFIG) ## Access Grafana running in K3S
 	$(OPEN) http://$(EQUINIX_METAL_INSTANCE_IP)

@@ -1,11 +1,11 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: erlang-memory-allocators
+  name: erlang-memory-allocators-grafana-dashboard
   labels:
     grafana_dashboard: "true"
 data:
-  erlang-memory-allocators.json: |-
+  erlang-memory-allocators-grafana-dashboard.json: |-
     {
       "__requires": [
         {
