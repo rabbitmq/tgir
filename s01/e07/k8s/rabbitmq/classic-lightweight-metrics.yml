@@ -24,26 +24,26 @@ spec:
       #  * coarse (emit per-queue / per-channel / per-connection statistics)
       #  * fine (also emit per-message statistics)
       # defult=fine
-      collect_statistics = fine
+      collect_statistics = coarse
 
       # Statistics collection interval in milliseconds (default=5000)
-      collect_statistics_interval = 1000
+      collect_statistics_interval = 10000
 
       # supported values: basic, detailed, none
       # default=basic
-      management.rates_mode = detailed
+      management.rates_mode = basic
 
       # defaults: 5, 60, 1800
-      management.sample_retention_policies.global.minute = 1
-      management.sample_retention_policies.global.hour = 1
-      management.sample_retention_policies.global.day = 1
+      management.sample_retention_policies.global.minute = 10
+      management.sample_retention_policies.global.hour = 300
+      management.sample_retention_policies.global.day = 1800
 
       # defaults: 5, 60
-      management.sample_retention_policies.basic.minute = 1
-      management.sample_retention_policies.basic.hour = 1
+      management.sample_retention_policies.basic.minute = 10
+      management.sample_retention_policies.basic.hour = 300
 
       # default:  5
-      management.sample_retention_policies.detailed.10 = 1
+      management.sample_retention_policies.detailed.10 = 60
 
       # management metrics can be disabled altogether
       management_agent.disable_metrics_collector = false
