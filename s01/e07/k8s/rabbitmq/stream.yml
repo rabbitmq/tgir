@@ -10,7 +10,7 @@ spec:
   resources:
     limits:
       memory: 1Gi
-      cpu: 4
+      cpu: 3
     requests:
       memory: 1Gi
       cpu: 1
@@ -19,6 +19,7 @@ spec:
   rabbitmq:
     additionalConfig: |-
       total_memory_available_override_value = 2GiB
+      # https://github.com/rabbitmq/rabbitmq-website/blob/stream-queue/site/stream.md#advertised-host-port
       stream.advertised_host = stream-rabbitmq-server-0.stream-rabbitmq-headless.default
     additionalPlugins:
       - rabbitmq_stream
@@ -76,7 +77,10 @@ spec:
             java -Dio.netty.processId=1 -jar stream-perf-test.jar \
               --addresses $RABBITMQ_SERVICE:5555 \
               --username $RABBITMQ_USER \
-              --password $RABBITMQ_PASS
+              --password $RABBITMQ_PASS \
+              --max-length-bytes=5000000000 \
+              --producers=1 \
+              --consumers=1
         env:
         - name: RABBITMQ_USER
           valueFrom:
