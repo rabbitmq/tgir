@@ -1,7 +1,7 @@
 apiVersion: rabbitmq.com/v1beta1
 kind: RabbitmqCluster
 metadata:
-  name: classic
+  name: default-metrics
 # kubectl explain rmq.spec
 spec:
   # https://hub.docker.com/_/rabbitmq?tab=tags
@@ -9,41 +9,46 @@ spec:
   replicas: 1
   resources:
     limits:
-      memory: 4Gi
+      memory: 4G
       cpu: 2
     requests:
-      memory: 4Gi
+      memory: 4G
       cpu: 2
   persistence:
     storage: 10Gi
   rabbitmq:
     additionalConfig: |
+      # https://www.rabbitmq.com/configure.html
+      vm_memory_high_watermark.absolute = 3GB
+      vm_memory_high_watermark_paging_ratio = 0.99
+
       # https://www.rabbitmq.com/management.html#sample-retention
+      #
       # Statistics collection mode. Primarily relevant for the management plugin.
       #  * none (do not emit statistics events)
       #  * coarse (emit per-queue / per-channel / per-connection statistics)
       #  * fine (also emit per-message statistics)
       # defult=fine
-      collect_statistics = coarse
+      collect_statistics = fine
 
       # Statistics collection interval in milliseconds (default=5000)
-      collect_statistics_interval = 10000
+      collect_statistics_interval = 5000
 
       # supported values: basic, detailed, none
       # default=basic
       management.rates_mode = basic
 
       # defaults: 5, 60, 1800
-      management.sample_retention_policies.global.minute = 10
-      management.sample_retention_policies.global.hour = 300
+      management.sample_retention_policies.global.minute = 5
+      management.sample_retention_policies.global.hour = 60
       management.sample_retention_policies.global.day = 1800
 
       # defaults: 5, 60
-      management.sample_retention_policies.basic.minute = 10
-      management.sample_retention_policies.basic.hour = 300
+      management.sample_retention_policies.basic.minute = 5
+      management.sample_retention_policies.basic.hour = 60
 
       # default:  5
-      management.sample_retention_policies.detailed.10 = 60
+      management.sample_retention_policies.detailed.10 = 5
 
       # management metrics can be disabled altogether
       management_agent.disable_metrics_collector = false
@@ -51,7 +56,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: classic-rabbitmq-perf-test
+  name: default-metrics-rabbitmq-perf-test
 spec:
   replicas: 1
   selector:
@@ -87,19 +92,17 @@ spec:
         - name: RABBITMQ_USER
           valueFrom:
             secretKeyRef:
-              name: classic-rabbitmq-default-user
+              name: default-metrics-rabbitmq-default-user
               key: username
         - name: RABBITMQ_PASS
           valueFrom:
             secretKeyRef:
-              name: classic-rabbitmq-default-user
+              name: default-metrics-rabbitmq-default-user
               key: password
         - name: RABBITMQ_SERVICE
-          value: classic-rabbitmq-client
+          value: default-metrics-rabbitmq-client
         - name: PRODUCERS
           value: "1000"
-        # - name: VARIABLE_RATE
-        #   value: "1:30,3:30,2:30,0:60"
         - name: CONFIRM
           value: "1"
         - name: CONSUMERS
@@ -110,10 +113,8 @@ spec:
           value: "false"
         - name: SIZE
           value: "100"
-        - name: QOS
-          value: "10"
         - name: QUEUE_PATTERN
-          value: "classic-non-durable-%d"
+          value: "default-metrics-non-durable-%d"
         - name: QUEUE_PATTERN_FROM
           value: "1"
         - name: QUEUE_PATTERN_TO
@@ -121,7 +122,7 @@ spec:
         - name: QUEUE_ARGS
           value: "x-max-length=100"
         - name: ROUTING_KEY
-          value: "classic-non-durable"
+          value: "default-metrics-non-durable"
         - name: METRICS_PROMETHEUS
           value: "true"
         - name: PUBLISHING_INTERVAL
@@ -136,5 +137,3 @@ spec:
           value: "10"
         - name: NIO_THREAD_POOL
           value: "10"
-        - name: MULTI_ACK_EVERY
-          value: "2"

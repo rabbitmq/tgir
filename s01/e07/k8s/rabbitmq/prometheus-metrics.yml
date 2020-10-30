@@ -1,40 +1,43 @@
 apiVersion: rabbitmq.com/v1beta1
 kind: RabbitmqCluster
 metadata:
-  name: quorum
+  name: prometheus-metrics
 # kubectl explain rmq.spec
 spec:
   # https://hub.docker.com/_/rabbitmq?tab=tags
   image: rabbitmq:3.8.9-management
-  replicas: 3
+  replicas: 1
   resources:
     limits:
-      memory: 3G
-      cpu: 1
+      memory: 4G
+      cpu: 2
     requests:
-      memory: 2G
-      cpu: 1
+      memory: 3G
+      cpu: 2
   persistence:
     storage: 10Gi
   rabbitmq:
     additionalConfig: |
       # https://www.rabbitmq.com/configure.html
-      vm_memory_high_watermark.absolute = 2G
+      vm_memory_high_watermark.absolute = 3GB
       vm_memory_high_watermark_paging_ratio = 0.99
+
+      # management metrics can be disabled altogether
+      management_agent.disable_metrics_collector = true
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: quorum-rabbitmq-perf-test
+  name: prometheus-rabbitmq-perf-test
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: quorum-rabbitmq-perf-test
+      app: rabbitmq-perf-test
   template:
     metadata:
       labels:
-        app: quorum-rabbitmq-perf-test
+        app: rabbitmq-perf-test
       annotations:
         prometheus.io/port: "8080"
         prometheus.io/scrape: "true"
@@ -45,11 +48,11 @@ spec:
         image: pivotalrabbitmq/perf-test:2.12.0
         resources:
           limits:
-            cpu: "200m"
-            memory: "200Mi"
+            cpu: 1
+            memory: 1Gi
           requests:
-            cpu: "100m"
-            memory: "100Mi"
+            cpu: 500m
+            memory: 500Mi
         command:
           - /bin/bash
           - -c
@@ -61,46 +64,50 @@ spec:
         - name: RABBITMQ_USER
           valueFrom:
             secretKeyRef:
-              name: quorum-rabbitmq-default-user
+              name: prometheus-rabbitmq-default-user
               key: username
         - name: RABBITMQ_PASS
           valueFrom:
             secretKeyRef:
-              name: quorum-rabbitmq-default-user
+              name: prometheus-rabbitmq-default-user
               key: password
         - name: RABBITMQ_SERVICE
-          value: quorum-rabbitmq-client
+          value: prometheus-rabbitmq-client
         - name: PRODUCERS
-          value: "2"
-        - name: VARIABLE_RATE
-          value: "10:30,60:30,20:30,0:60"
+          value: "1000"
+        # - name: VARIABLE_RATE
+        #   value: "1:30,3:30,2:30,0:60"
         - name: CONFIRM
-          value: "10"
+          value: "1"
         - name: CONSUMERS
-          value: "4"
+          value: "1000"
         - name: CONSUMER_LATENCY
-          value: "100000"
+          value: "10000"
         - name: AUTO_DELETE
           value: "false"
-        - name: JSON_BODY
-          value: "true"
         - name: SIZE
-          value: "1000"
-        - name: QOS
           value: "100"
-        - name: MULTI_ACK_EVERY
-          value: "10"
         - name: QUEUE_PATTERN
-          value: "quorum-%d"
+          value: "prometheus-non-durable-%d"
         - name: QUEUE_PATTERN_FROM
           value: "1"
         - name: QUEUE_PATTERN_TO
-          value: "3"
+          value: "1000"
         - name: QUEUE_ARGS
-          value: "x-max-length=10000,x-queue-type=quorum,x-max-in-memory-bytes=500000000"
-        - name: FLAG
-          value: "persistent"
+          value: "x-max-length=100"
         - name: ROUTING_KEY
-          value: "quorum"
+          value: "prometheus-non-durable"
         - name: METRICS_PROMETHEUS
           value: "true"
+        - name: PUBLISHING_INTERVAL
+          value: "5"
+        - name: HEARTBEAT_SENDER_THREADS
+          value: "10"
+        - name: PRODUCER_RANDOM_START_DELAY
+          value: "1800"
+        - name: PRODUCER_SCHEDULER_THREADS
+          value: "10"
+        - name: CONSUMERS_THREAD_POOLS
+          value: "10"
+        - name: NIO_THREAD_POOL
+          value: "10"

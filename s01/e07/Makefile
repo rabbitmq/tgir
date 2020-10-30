@@ -6,11 +6,13 @@ TGIR := tgir-s01e07
 DATA_CENTRE ?= am6
 # Available bare metal servers: https://metal.equinix.com/product/servers/
 # $ equinix_metal plans get
-INSTANCE_TYPE ?= c3.small.x86
-INSTANCE_NAME ?= $(TGIR)-$(USER)
+SERVER_TYPE ?= c3.small.x86
+SERVER_NAME ?= $(TGIR)
 # $ equinix_metal operating-systems get
 OS ?= ubuntu_20_04
 SSH_USER ?= root
+
+K3S_HOST ?= $(EQUINIX_METAL_SERVER_IP)
 
 K3S_CHANNEL ?= v1.18
 
@@ -53,7 +55,7 @@ $(KUBECONFIG_DIR):
 $(KUBECONFIG): | $(K3SUP) $(KUBECTL) $(KUBECONFIG_DIR)
 	$(K3SUP) install \
 	  --skip-install \
-	  --ip $(EQUINIX_METAL_INSTANCE_IP) \
+	  --ip $(K3S_HOST) \
 	  --user $(SSH_USER) \
 	  --ssh-key $(SSH_PRIVATE_KEY) \
 	  --local-path $(KUBECONFIG)
@@ -95,7 +97,7 @@ PROJECT_ID ?=
 SSH_PUBLIC_KEY ?=
 SSH_PUBLIC_KEY_NAME = $(notdir $(basename $(SSH_PUBLIC_KEY)))
 .PHONY: equinix-metal-ssh-key
-equinix-metal-ssh-key: | $(EQUINIX_METAL) ## Add SSH key that will be added to all new instances
+equinix-metal-ssh-key: | $(EQUINIX_METAL) ## Add SSH key that will be added to all new servers
 	@if [[ ! -r "$(SSH_PUBLIC_KEY)" ]] \
 	; then \
 	  printf "$(BOLD)SSH_PUBLIC_KEY$(NORMAL)$(RED) variable must be set to a public SSH key file path, e.g. ~/.ssh/id_rsa.pub$(NORMAL)\n" \
@@ -103,31 +105,32 @@ equinix-metal-ssh-key: | $(EQUINIX_METAL) ## Add SSH key that will be added to a
 	; fi
 	$(EQUINIX_METAL) ssh-key create --key "$$(cat $(SSH_PUBLIC_KEY))" --label $(USER)-$(SSH_PUBLIC_KEY_NAME)
 
-.PHONY: equinix-metal
-equinix-metal: | $(EQUINIX_METAL) ## Create a Equinix Metal instance - optional step
-	$(EQUINIX_METAL) server create \
+.PHONY: equinix-metal-server
+equinix-metal-server: | $(EQUINIX_METAL) ## Create a Equinix Metal host - optional step
+	$(EQUINIX_METAL) server get --id $$($(SERVERS) --json 2>/dev/null | $(FIND_SERVER_ID)) \
+	|| $(EQUINIX_METAL) server create \
 	  --facility $(DATA_CENTRE) \
-	  --hostname $(INSTANCE_NAME) \
+	  --hostname $(SERVER_NAME) \
 	  --operating-system $(OS) \
-	  --plan $(INSTANCE_TYPE) \
+	  --plan $(SERVER_TYPE) \
 	  --project-id $(PROJECT_ID)
 
-INSTANCES = $(EQUINIX_METAL) server get --project-id $(PROJECT_ID)
-FIND_INSTANCE_ID = $(JQ) --raw-output '.[] | select(.hostname == "$(INSTANCE_NAME)") | .id'
+SERVERS = $(EQUINIX_METAL) server get --project-id $(PROJECT_ID)
+FIND_SERVER_ID = $(JQ) --raw-output '.[] | select(.hostname == "$(SERVER_NAME)") | .id'
 
-define EQUINIX_METAL_INSTANCE_IP
-$$($(INSTANCES) --json 2>/dev/null \
-| $(JQ) --raw-output '.[] | select(.hostname == "$(INSTANCE_NAME)") | .ip_addresses[] | select(.address_family == 4) | select(.public == true) | .address')
+define EQUINIX_METAL_SERVER_IP
+$$($(SERVERS) --json 2>/dev/null \
+| $(JQ) --raw-output '.[] | select(.hostname == "$(SERVER_NAME)") | .ip_addresses[] | select(.address_family == 4) | select(.public == true) | .address')
 endef
-.PHONY: equinix-metal-rm
-equinix-metal-rm: | $(EQUINIX_METAL) $(JQ) ## Delete the Equinix Metal instance - this deletes everything
-	$(EQUINIX_METAL) server delete --id $$($(INSTANCES) --json 2>/dev/null | $(FIND_INSTANCE_ID))
+.PHONY: equinix-metal-server-rm
+equinix-metal-server-rm: | $(EQUINIX_METAL) $(JQ) ## Delete the Equinix Metal server - this deletes everything
+	$(EQUINIX_METAL) server delete --id $$($(SERVERS) --json 2>/dev/null | $(FIND_SERVER_ID))
 
-equinix-metal-instances: | $(EQUINIX_METAL) ## List all Equinix Metal instances
-	$(INSTANCES) $(ARGS)
+equinix-metal-servers: | $(EQUINIX_METAL) ## List all Equinix Metal servers
+	$(SERVERS) $(ARGS)
 
-equinix-metal-ssh: ## SSH into the Equinix Metal instance
-	ssh $(SSH_USER)@$(EQUINIX_METAL_INSTANCE_IP)
+ssh-k3s: ## SSH into the K3S host
+	ssh $(SSH_USER)@$(K3S_HOST)
 
 SSH_PRIVATE_KEY ?=
 .PHONY: k3s
@@ -138,14 +141,11 @@ k3s: | $(K3SUP) ## Create a K3S instance on a Linux host - works on any Ubuntu V
 	  ; exit 1 \
 	; fi
 	$(K3SUP) install \
-	  --ip $(EQUINIX_METAL_INSTANCE_IP) \
+	  --ip $(K3S_HOST) \
 	  --user $(SSH_USER) \
 	  --ssh-key $(SSH_PRIVATE_KEY) \
 	  --local-path $(KUBECONFIG) \
 	  --k3s-channel $(K3S_CHANNEL)
-
-.PHONY: k3s-monitoring
-k3s-monitoring: k3s-prometheus-stack k3s-rabbitmq-grafana ## Integrate Prometheus & Grafana with K3S, including RabbitMQ dashboards
 
 # https://github.com/cablespaghetti/k3s-monitoring
 # + https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack
@@ -155,8 +155,8 @@ k3s-monitoring: k3s-prometheus-stack k3s-rabbitmq-grafana ## Integrate Prometheu
 #
 # helm search repo --versions prometheus-community/kube-prometheus-stack
 KUBE_PROMETHEUS_STACK_VERSION ?= 10.3.1
-.PHONY: k3s-prometheus-stack
-k3s-prometheus-stack: | $(KUBECONFIG) $(HELM)
+.PHONY: k3s-monitoring
+k3s-monitoring: | $(KUBECONFIG) $(HELM) ## Integrate Prometheus & Grafana with K3S, including system metrics
 	$(HELM) repo add prometheus-community https://prometheus-community.github.io/helm-charts
 	$(HELM) upgrade prometheus prometheus-community/kube-prometheus-stack \
 	  --install \
@@ -165,6 +165,11 @@ k3s-prometheus-stack: | $(KUBECONFIG) $(HELM)
 	$(KUBECTL) apply \
 	  --filename k8s/prometheus-stack/traefik-servicemonitor.yml \
 	  --filename k8s/prometheus-stack/traefik-grafana-dashboard.yml
+
+k3s-grafana: | $(KUBECONFIG) ## Access Grafana running in K3S
+	$(OPEN) http://$(K3S_HOST)
+
+k3s-rabbitmq: k3s-rabbitmq-grafana k3s-rabbitmq-operator rabbitmq-default-metrics rabbitmq-minimal-metrics rabbitmq-prometheus-metrics rabbitmq-quorum rabbitmq-stream ## Deploy all things RabbitMQ in K3S: operator, clusters, workloads & dashboards
 
 # https://grafana.com/orgs/rabbitmq
 .PHONY: k3s-rabbitmq-grafana
@@ -176,24 +181,29 @@ k3s-rabbitmq-grafana: | $(KUBECONFIG)
 	  --filename k8s/prometheus-stack/erlang-distribution-grafana-dashboard.yml \
 	  --filename k8s/prometheus-stack/erlang-memory-allocators-grafana-dashboard.yml
 
-k3s-access-grafana: | $(KUBECONFIG) ## Access Grafana running in K3S
-	$(OPEN) http://$(EQUINIX_METAL_INSTANCE_IP)
-
 # https://github.com/rabbitmq/cluster-operator/releases
 RABBITMQ_OPERATOR_VERSION ?= 0.48.0
 k3s-rabbitmq-operator: | $(KUBECONFIG) ## Install RabbitMQ Cluster Operator into K3S
 	$(KUBECTL) apply --filename https://github.com/rabbitmq/cluster-operator/releases/download/$(RABBITMQ_OPERATOR_VERSION)/cluster-operator.yml
 
-.PHONY: rabbitmq-classic
-rabbitmq-classic: | $(KUBECONFIG) ## Deploy a RabbitMQ cluster & workload that uses Classic Queues
-	$(KUBECTL) apply --filename k8s/rabbitmq/classic.yml
+.PHONY: rabbitmq-default-metrics
+rabbitmq-default-metrics: | $(KUBECONFIG) ## Deploy a RabbitMQ with many Classic Queues, Publishers & Consumers and default Management metrics
+	$(KUBECTL) apply --filename k8s/rabbitmq/default-metrics.yml
+
+.PHONY: rabbitmq-minimal-metrics
+rabbitmq-minimal-metrics: | $(KUBECONFIG) ## Deploy a RabbitMQ with many Classic Queues, Publishers & Consumers and minimal Management metrics
+	$(KUBECTL) apply --filename k8s/rabbitmq/minimal-metrics.yml
+
+.PHONY: rabbitmq-prometheus-metrics
+rabbitmq-no-metrics: | $(KUBECONFIG) ## Deploy a RabbitMQ with many Classic Queues, Publishers & Consumers and no Management metrics
+	$(KUBECTL) apply --filename k8s/rabbitmq/prometheus-metrics.yml
 
 .PHONY: rabbitmq-quorum
-rabbitmq-quorum: | $(KUBECONFIG) ## Deploy a RabbitMQ cluster & workload that uses Quorum Queues
+rabbitmq-quorum: | $(KUBECONFIG) ## Deploy a RabbitMQ with a Quorum Queue workload
 	$(KUBECTL) apply --filename k8s/rabbitmq/quorum.yml
 
 .PHONY: rabbitmq-stream
-rabbitmq-stream: | $(KUBECONFIG) ## Deploy a RabbitMQ cluster & workload that uses Stream Queues
+rabbitmq-stream: | $(KUBECONFIG) ## Deploy a RabbitMQ with a Stream Queue workload
 	$(KUBECTL) apply --filename k8s/rabbitmq/stream.yml
 
 .PHONY: rabbitmq-rm-%
