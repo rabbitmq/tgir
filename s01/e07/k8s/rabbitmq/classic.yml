@@ -43,11 +43,11 @@ spec:
         image: pivotalrabbitmq/perf-test:2.12.0
         resources:
           limits:
-            cpu: "200m"
-            memory: "200Mi"
+            cpu: 1
+            memory: 1Gi
           requests:
-            cpu: "100m"
-            memory: "100Mi"
+            cpu: 500m
+            memory: 500Mi
         command:
           - /bin/bash
           - -c
@@ -69,13 +69,13 @@ spec:
         - name: RABBITMQ_SERVICE
           value: classic-rabbitmq-client
         - name: PRODUCERS
-          value: "2"
+          value: "500"
         - name: VARIABLE_RATE
-          value: "10:30,60:30,20:30,0:60"
+          value: "1:30,3:30,2:30,0:60"
         - name: CONFIRM
           value: "10"
         - name: CONSUMERS
-          value: "4"
+          value: "500"
         - name: CONSUMER_LATENCY
           value: "100000"
         - name: AUTO_DELETE
@@ -93,9 +93,9 @@ spec:
         - name: QUEUE_PATTERN_FROM
           value: "1"
         - name: QUEUE_PATTERN_TO
-          value: "2"
+          value: "500"
         - name: QUEUE_ARGS
-          value: "x-max-length=10000"
+          value: "x-max-length=1000"
         - name: ROUTING_KEY
           value: "classic-non-durable"
         - name: METRICS_PROMETHEUS
