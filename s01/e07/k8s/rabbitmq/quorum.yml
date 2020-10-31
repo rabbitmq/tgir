@@ -79,7 +79,7 @@ spec:
         - name: CONSUMERS
           value: "4"
         - name: CONSUMER_LATENCY
-          value: "100000"
+          value: "50000"
         - name: AUTO_DELETE
           value: "false"
         - name: JSON_BODY
