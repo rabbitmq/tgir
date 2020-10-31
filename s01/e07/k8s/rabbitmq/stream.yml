@@ -10,12 +10,10 @@ spec:
   resources:
     limits:
       memory: 2G
-      cpu: 3
+      cpu: 4
     requests:
-      memory: 1G
-      cpu: 1
-  persistence:
-    storage: 10Gi
+      memory: 2G
+      cpu: 4
   rabbitmq:
     additionalConfig: |
       # https://www.rabbitmq.com/configure.html
@@ -66,10 +64,10 @@ spec:
         resources:
           limits:
             cpu: 2
-            memory: 500Mi
+            memory: 2G
           requests:
             cpu: 1
-            memory: 250Mi
+            memory: 1G
         command:
           - /bin/bash
           - -c

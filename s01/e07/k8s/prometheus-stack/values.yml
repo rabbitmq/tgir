@@ -429,10 +429,10 @@ alertmanager:
     resources:
       limits:
         cpu: "500m"
-        memory: "500Mi"
+        memory: "500M"
       requests:
         cpu: "100m"
-        memory: "100Mi"
+        memory: "100M"
 
     ## Pod anti-affinity can prevent the scheduler from placing Prometheus replicas on the same node.
     ## The default value "soft" means that the scheduler should *prefer* to not schedule two replica pods onto the same node but no guarantee is provided.
@@ -1910,11 +1910,11 @@ prometheus:
     ##
     resources:
       limits:
-        cpu: "4"
-        memory: "2Gi"
+        cpu: "8"
+        memory: "8G"
       requests:
         cpu: "500m"
-        memory: "500Mi"
+        memory: '500M'
 
     ## Prometheus StorageSpec for persistent data
     ## ref: https://github.com/prometheus-operator/prometheus-operator/blob/master/Documentation/user-guides/storage.md

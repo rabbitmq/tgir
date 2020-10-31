@@ -6,7 +6,7 @@ TGIR := tgir-s01e07
 DATA_CENTRE ?= am6
 # Available bare metal servers: https://metal.equinix.com/product/servers/
 # $ equinix_metal plans get
-SERVER_TYPE ?= c3.small.x86
+SERVER_TYPE ?= c3.medium.x86
 SERVER_NAME ?= $(TGIR)
 # $ equinix_metal operating-systems get
 OS ?= ubuntu_20_04
