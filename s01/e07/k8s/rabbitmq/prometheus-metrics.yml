@@ -74,13 +74,11 @@ spec:
         - name: RABBITMQ_SERVICE
           value: prometheus-rabbitmq-client
         - name: PRODUCERS
-          value: "1000"
-        # - name: VARIABLE_RATE
-        #   value: "1:30,3:30,2:30,0:60"
+          value: "2000"
         - name: CONFIRM
           value: "1"
         - name: CONSUMERS
-          value: "1000"
+          value: "2000"
         - name: CONSUMER_LATENCY
           value: "10000"
         - name: AUTO_DELETE
@@ -92,7 +90,7 @@ spec:
         - name: QUEUE_PATTERN_FROM
           value: "1"
         - name: QUEUE_PATTERN_TO
-          value: "1000"
+          value: "2000"
         - name: QUEUE_ARGS
           value: "x-max-length=100"
         - name: ROUTING_KEY
