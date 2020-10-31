@@ -195,7 +195,7 @@ rabbitmq-minimal-metrics: | $(KUBECONFIG) ## Deploy a RabbitMQ with many Classic
 	$(KUBECTL) apply --filename k8s/rabbitmq/minimal-metrics.yml
 
 .PHONY: rabbitmq-prometheus-metrics
-rabbitmq-no-metrics: | $(KUBECONFIG) ## Deploy a RabbitMQ with many Classic Queues, Publishers & Consumers and no Management metrics
+rabbitmq-prometheus-metrics: | $(KUBECONFIG) ## Deploy a RabbitMQ with many Classic Queues, Publishers & Consumers and no Management metrics
 	$(KUBECTL) apply --filename k8s/rabbitmq/prometheus-metrics.yml
 
 .PHONY: rabbitmq-quorum
