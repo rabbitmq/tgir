@@ -38,6 +38,9 @@ spec:
 
       # management metrics can be disabled altogether
       management_agent.disable_metrics_collector = false
+
+      # default:  5
+      management.sample_retention_policies.detailed.10 = 5
 ---
 apiVersion: apps/v1
 kind: Deployment
