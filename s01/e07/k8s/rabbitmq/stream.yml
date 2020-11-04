@@ -18,8 +18,6 @@ spec:
     additionalConfig: |
       # https://www.rabbitmq.com/configure.html
       vm_memory_high_watermark.absolute = 1GB
-      # https://github.com/rabbitmq/rabbitmq-website/blob/stream-queue/site/stream.md#advertised-host-port
-      stream.advertised_host = stream-rabbitmq-server-0.stream-rabbitmq-headless.default
     additionalPlugins:
       - rabbitmq_stream
   override:
