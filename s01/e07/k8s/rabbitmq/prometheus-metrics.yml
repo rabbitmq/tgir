@@ -46,7 +46,7 @@ spec:
         image: pivotalrabbitmq/perf-test:2.12.0
         resources:
           limits:
-            cpu: 3
+            cpu: 2
             memory: 3G
           requests:
             cpu: 1
