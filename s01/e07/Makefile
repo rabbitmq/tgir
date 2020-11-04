@@ -173,7 +173,7 @@ k3s-rabbitmq: k3s-rabbitmq-grafana k3s-rabbitmq-operator rabbitmq-default-metric
 
 # https://grafana.com/orgs/rabbitmq
 .PHONY: k3s-rabbitmq-grafana
-k3s-rabbitmq-grafana: | $(KUBECONFIG)
+k3s-rabbitmq-grafana: | $(KUBECONFIG) ## Add RabbitMQ Grafana dashboards to Kube Prometheus Stack
 	$(KUBECTL) apply \
 	  --filename k8s/prometheus-stack/rabbitmq-overview-grafana-dashboard.yml \
 	  --filename k8s/prometheus-stack/rabbitmq-quorum-queues-raft-grafana-dashboard.yml \
