@@ -47,6 +47,32 @@ k3sup: $(K3SUP)
 releases-k3sup:
 	$(OPEN) $(K3SUP_RELEASES)
 
+KREW_ROOT = $(XDG_CONFIG_HOME)/krew
+export KREW_ROOT
+KREW_RELEASES := https://github.com/kubernetes-sigs/krew/releases
+KREW_VERSION := 0.4.0
+KREW_BIN_DIR := krew-$(KREW_VERSION)
+KREW_URL := $(KREW_RELEASES)/download/v$(KREW_VERSION)/krew.tar.gz
+KREW := $(LOCAL_BIN)/$(KREW_BIN_DIR)/krew-$(platform)_amd64
+$(KREW): | $(CURL) $(LOCAL_BIN)
+	$(CURL) --progress-bar --fail --location --output $(LOCAL_BIN)/$(KREW_BIN_DIR).tar.gz "$(KREW_URL)"
+	mkdir -p $(LOCAL_BIN)/$(KREW_BIN_DIR) && tar zxf $(LOCAL_BIN)/$(KREW_BIN_DIR).tar.gz -C $(LOCAL_BIN)/$(KREW_BIN_DIR)
+	touch $(KREW)
+	chmod +x $(KREW)
+	$(KREW) version \
+	   | grep $(KREW_VERSION)
+	ln -sf $(KREW) $(LOCAL_BIN)/krew
+.PHONY: krew
+krew: $(KREW)
+.PHONY: releases-krew
+releases-krew:
+	$(OPEN) $(KREW_RELEASES)
+$(KREW_ROOT)/bin/kubectl-example: $(KREW)
+	$(KUBECTL) krew update
+	$(KREW) install example
+.PHONY: kubectl-example
+kubectl-example: $(KREW_ROOT)/bin/kubectl-example
+
 KUBECONFIG_DIR := $(XDG_CONFIG_HOME)/kubectl
 KUBECONFIG := $(KUBECONFIG_DIR)/config
 export KUBECONFIG
@@ -67,9 +93,10 @@ k9s: | $(K9S) $(KUBECONFIG) ## Interact with our K3S instance via a terminal UI
 	$(K9S) --all-namespaces
 
 define ENV
-export PATH=$(LOCAL_BIN):$$PATH
+export PATH=$(LOCAL_BIN):$(KREW_ROOT)/bin:$$PATH
 export XDG_CONFIG_HOME="$(XDG_CONFIG_HOME)"
 export KUBECONFIG="$(KUBECONFIG)"
+export KREW_ROOT="$(KREW_ROOT)"
 unalias k 2>/dev/null; alias k=kubectl
 unalias m 2>/dev/null; alias m=make
 endef
