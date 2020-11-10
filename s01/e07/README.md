@@ -7,8 +7,8 @@
 <a href="https://www.youtube.com/watch?v=NWISW6AwpOE" target="_blank"><img src="video.jpg" border="50" /></a>
 
 You have a few RabbitMQ deployments. How do you monitor them?
-You have heard of the [great Grafana dashboards that team RabbitMQ maintains](https://grafana.com/orgs/rabbitmq), maybe from this [RabbitMQ Summit 2019 talk](https://www.youtube.com/watch?v=L-tYXpirbpA) or from the official [Monitoring with Prometheus & Grafana](https://www.rabbitmq.com/prometheus.html) guide. But how do you actually set them up?
-And what about the default metrics configuration? Can this be improved if Prometheus is used?
+You have heard of the [Grafana dashboards that team RabbitMQ maintains](https://grafana.com/orgs/rabbitmq), maybe from this [RabbitMQ Summit 2019 talk](https://www.youtube.com/watch?v=L-tYXpirbpA) or from the official [Monitoring with Prometheus & Grafana](https://www.rabbitmq.com/prometheus.html) guide. But how do you actually set them up?
+And what about the default metrics configuration? Can this be improved?
 
 For speed and convenience, we set up K3S on a Linux host ([we had some Equinix Metal credits](https://info.equinixmetal.com/changelog) that we put to good use) and then:
 
