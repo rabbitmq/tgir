@@ -1,0 +1,114 @@
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: prometheus-metrics
+# kubectl explain rmq.spec
+spec:
+  # https://hub.docker.com/_/rabbitmq?tab=tags
+  image: rabbitmq:3.8.9-management
+  replicas: 1
+  resources:
+    limits:
+      memory: 8G
+      cpu: 4
+    requests:
+      memory: 8G
+      cpu: 4
+  rabbitmq:
+    additionalConfig: |
+      # https://www.rabbitmq.com/configure.html
+      vm_memory_high_watermark.absolute = 7GB
+      vm_memory_high_watermark_paging_ratio = 0.99
+
+      # management metrics can be disabled altogether
+      management_agent.disable_metrics_collector = true
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus-metrics-rabbitmq-perf-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq-perf-test
+  template:
+    metadata:
+      labels:
+        app: rabbitmq-perf-test
+      annotations:
+        prometheus.io/port: "8080"
+        prometheus.io/scrape: "true"
+    spec:
+      containers:
+      - name: perftest
+        # https://hub.docker.com/r/pivotalrabbitmq/perf-test/tags
+        image: pivotalrabbitmq/perf-test:2.12.0
+        resources:
+          limits:
+            cpu: 2
+            memory: 3G
+          requests:
+            cpu: 1
+            memory: 1G
+        command:
+          - /bin/bash
+          - -c
+        args:
+          - |-
+            bin/runjava com.rabbitmq.perf.PerfTest \
+              --uri "amqp://$RABBITMQ_USER:$RABBITMQ_PASS@$RABBITMQ_SERVICE:5672/%2f"
+        env:
+        - name: RABBITMQ_USER
+          valueFrom:
+            secretKeyRef:
+              name: prometheus-metrics-rabbitmq-default-user
+              key: username
+        - name: RABBITMQ_PASS
+          valueFrom:
+            secretKeyRef:
+              name: prometheus-metrics-rabbitmq-default-user
+              key: password
+        - name: RABBITMQ_SERVICE
+          value: prometheus-metrics-rabbitmq-client
+
+        - name: PRODUCER_SCHEDULER_THREADS
+          value: "500"
+        - name: PRODUCERS
+          value: "5000"
+        - name: PRODUCER_RANDOM_START_DELAY
+          value: "600"
+        - name: PUBLISHING_INTERVAL
+          value: "10"
+        - name: CONFIRM
+          value: "1"
+        - name: ROUTING_KEY
+          value: "prometheus-metrics-non-durable"
+        - name: SIZE
+          value: "100"
+
+        - name: CONSUMERS_THREAD_POOLS
+          value: "500"
+        - name: CONSUMERS
+          value: "5000"
+        - name: CONSUMER_LATENCY
+          value: "10000"
+
+        - name: HEARTBEAT_SENDER_THREADS
+          value: "500"
+        - name: NIO_THREAD_POOL
+          value: "500"
+
+        - name: QUEUE_PATTERN
+          value: "prometheus-metrics-non-durable-%d"
+        - name: QUEUE_PATTERN_FROM
+          value: "1"
+        - name: QUEUE_PATTERN_TO
+          value: "5000"
+        - name: QUEUE_ARGS
+          value: "x-max-length=100"
+        - name: AUTO_DELETE
+          value: "false"
+
+        - name: METRICS_PROMETHEUS
+          value: "true"
