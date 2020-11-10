@@ -1,4 +1,4 @@
-# TGIR S01E07: How to monitor RabbitMQ
+# TGIR S01E07: How to monitor RabbitMQ?
 
 * Proposed via [rabbitmq/tgir#17](https://github.com/rabbitmq/tgir/issues/17)
 * Hosted by [@gerhardlazu](https://twitter.com/gerhardlazu) & [@MichalKuratczyk](https://twitter.com/michalkuratczyk)
