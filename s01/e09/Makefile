@@ -31,10 +31,10 @@ env:: | $(KUBECONFIG_DIR) ## Configure shell env - eval "$(make env)" OR source 
 chaos-operator: | $(KUBECONFIG) ## Install Chaos Mesh Operator
 	$(CURL) -sSL https://mirrors.chaos-mesh.org/latest/install.sh | bash
 
-MONITORING_DIR := monitoring-stack
+MONITORING_DIR := k8s/monitoring-stack
 .PHONY: monitoring-stack
 monitoring-stack: ## Deploy a monitoring stack
-	$(DOCKER) run --rm -v $(MONITORING_DIR):$(MONITORING_DIR) --workdir $(MONITORING_DIR) quay.io/coreos/jsonnet-ci ./build.sh monitoringstack.jsonnet
+	$(DOCKER) run --user $$(id -u):$$(id -g) --rm -v $(PWD)/$(MONITORING_DIR):/$(MONITORING_DIR) --workdir /$(MONITORING_DIR) quay.io/coreos/jsonnet-ci ./build.sh monitoringstack.jsonnet
 	$(KUBECTL) apply --filename $(MONITORING_DIR)/manifests/setup
 	$(KUBECTL) apply --filename $(MONITORING_DIR)/manifests
 	$(KUBECTL) apply --filename $(MONITORING_DIR)/rabbitmq
