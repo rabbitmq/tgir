@@ -3,7 +3,8 @@ include $(dir $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST)))/../../Makefile
 TGIR := tgir-s01e08
 DKE_CLUSTER := $(TGIR)
 # make dke-regions
-DKE_REGION ?= lon1
+# Because Frankfurt is closer to @GSantomaggio than either London or Amsterdam
+DKE_REGION ?= fra1
 
 KUBECONFIG_DIR := $(XDG_CONFIG_HOME)/kubectl
 KUBECONFIG := $(KUBECONFIG_DIR)/config
