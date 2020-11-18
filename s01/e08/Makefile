@@ -58,7 +58,7 @@ $(DOCTL_CONFIG): | $(DOCTL_CONFIG_DIR) $(DOCTL)
 .PHONY: dke
 dke: | $(DOCTL_CONFIG) $(KUBECONFIG_DIR) ## Create Digital Ocean Kubernetes cluster
 	$(DOCTL) --config $(DOCTL_CONFIG) kubernetes cluster get $(DKE_CLUSTER) \
-	|| time $(DOCTL) kubernetes cluster create $(DKE_CLUSTER) \
+	|| time $(DOCTL) --config $(DOCTL_CONFIG) kubernetes cluster create $(DKE_CLUSTER) \
 	   --region $(DKE_REGION) \
 	   --auto-upgrade \
 	   --maintenance-window saturday=20:00
