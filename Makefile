@@ -100,10 +100,10 @@ releases-k9s:
 
 KUBECTL_RELEASES := https://github.com/kubernetes/kubernetes/releases
 # K8S v1.18 is considered stable in October 2020, using latest version available
-KUBECTL_VERSION := 1.18.10
-KUBECTL_BIN := kubectl-$(KUBECTL_VERSION)-$(platform)-amd64
-KUBECTL_URL := https://storage.googleapis.com/kubernetes-release/release/v$(KUBECTL_VERSION)/bin/$(platform)/amd64/kubectl
-KUBECTL := $(LOCAL_BIN)/$(KUBECTL_BIN)
+KUBECTL_VERSION ?= 1.18.10
+KUBECTL_BIN = kubectl-$(KUBECTL_VERSION)-$(platform)-amd64
+KUBECTL_URL = https://storage.googleapis.com/kubernetes-release/release/v$(KUBECTL_VERSION)/bin/$(platform)/amd64/kubectl
+KUBECTL = $(LOCAL_BIN)/$(KUBECTL_BIN)
 $(KUBECTL): | $(CURL) $(LOCAL_BIN)
 	$(CURL) --progress-bar --fail --location --output $(KUBECTL) "$(KUBECTL_URL)"
 	touch $(KUBECTL)

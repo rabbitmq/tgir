@@ -10,6 +10,8 @@ DKE_REGION ?= fra1
 DKE_NODES_TYPE ?= s-2vcpu-4gb
 # make dke-versions
 DKE_VERSION ?= 1.19.3-do.2
+# Keeping this in sync with DKE version
+KUBECTL_VERSION = 1.19.3
 
 KUBECONFIG_DIR := $(XDG_CONFIG_HOME)/kubectl
 KUBECONFIG := $(KUBECONFIG_DIR)/config
