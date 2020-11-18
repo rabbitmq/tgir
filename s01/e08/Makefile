@@ -52,17 +52,30 @@ DOCTL_CONFIG_DIR := $(XDG_CONFIG_HOME)/doctl
 $(DOCTL_CONFIG_DIR):
 	mkdir -p $(@)
 DOCTL_CONFIG := $(DOCTL_CONFIG_DIR)/config.yaml
+DOCTL_WITH_CONFIG = $(DOCTL) --config $(DOCTL_CONFIG)
 $(DOCTL_CONFIG): | $(DOCTL_CONFIG_DIR) $(DOCTL)
-	$(DOCTL) --config $(DOCTL_CONFIG) auth init
+	$(DOCTL_WITH_CONFIG) auth init
 
 .PHONY: dke
 dke: | $(DOCTL_CONFIG) $(KUBECONFIG_DIR) ## Create Digital Ocean Kubernetes cluster
-	$(DOCTL) --config $(DOCTL_CONFIG) kubernetes cluster get $(DKE_CLUSTER) \
-	|| time $(DOCTL) --config $(DOCTL_CONFIG) kubernetes cluster create $(DKE_CLUSTER) \
+	$(DOCTL_WITH_CONFIG) kubernetes cluster get $(DKE_CLUSTER) \
+	|| time $(DOCTL_WITH_CONFIG) kubernetes cluster create $(DKE_CLUSTER) \
 	   --region $(DKE_REGION) \
 	   --auto-upgrade \
 	   --maintenance-window saturday=20:00
 
 .PHONY: dke-regions
 dke-regions: | $(DOCTL_CONFIG) ## Show all regions where Digital Ocean Kubernetes can be deployed
-	$(DOCTL) --config $(DOCTL_CONFIG) kubernetes options regions
+	$(DOCTL_WITH_CONFIG) kubernetes options regions
+
+.PHONY: dke-ls
+dke-ls: | $(DOCTL_CONFIG) ## List K8S clusters
+	$(DOCTL_WITH_CONFIG) kubernetes cluster list
+
+.PHONY: dke-rm
+dke-rm: | $(DOCTL_CONFIG) ## Delete K8S cluster
+	$(DOCTL_WITH_CONFIG) kubernetes cluster delete $(NAMESPACE)
+
+.PHONY: dke-node-sizes
+dke-node-sizes: | $(DOCTL_CONFIG) ## Show all size options for K8S nodes
+	$(DOCTL_WITH_CONFIG) kubernetes options sizes
