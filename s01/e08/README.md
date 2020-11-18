@@ -1,4 +1,4 @@
-# TGIR S01E08: Securing publicly accessible RabbitMQ clusters
+# TGIR S01E08: Secure your publicly accessible RabbitMQ clusters
 
 * Proposed via [rabbitmq/tgir#16](https://github.com/rabbitmq/tgir/issues/16)
 * Hosted by [@gerhardlazu](https://twitter.com/gerhardlazu) & [@GSantomaggio](https://twitter.com/GSantomaggio)
