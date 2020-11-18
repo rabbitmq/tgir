@@ -2,9 +2,14 @@ include $(dir $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST)))/../../Makefile
 
 TGIR := tgir-s01e08
 DKE_CLUSTER := $(TGIR)
+DKE_NODES_COUNT ?= 3
 # make dke-regions
 # Because Frankfurt is closer to @GSantomaggio than either London or Amsterdam
 DKE_REGION ?= fra1
+# make dke-sizes
+DKE_NODES_TYPE ?= s-2vcpu-4gb
+# make dke-versions
+DKE_VERSION ?= 1.19.3-do.2
 
 KUBECONFIG_DIR := $(XDG_CONFIG_HOME)/kubectl
 KUBECONFIG := $(KUBECONFIG_DIR)/config
@@ -61,12 +66,11 @@ dke: | $(DOCTL_CONFIG) $(KUBECONFIG_DIR) ## Create Digital Ocean Kubernetes clus
 	$(DOCTL_WITH_CONFIG) kubernetes cluster get $(DKE_CLUSTER) \
 	|| time $(DOCTL_WITH_CONFIG) kubernetes cluster create $(DKE_CLUSTER) \
 	   --region $(DKE_REGION) \
+	   --size $(DKE_NODES_TYPE) \
+	   --version $(DKE_VERSION) \
+	   --count $(DKE_NODES_COUNT) \
 	   --auto-upgrade \
 	   --maintenance-window saturday=20:00
-
-.PHONY: dke-regions
-dke-regions: | $(DOCTL_CONFIG) ## Show all regions where Digital Ocean Kubernetes can be deployed
-	$(DOCTL_WITH_CONFIG) kubernetes options regions
 
 .PHONY: dke-ls
 dke-ls: | $(DOCTL_CONFIG) ## List K8S clusters
@@ -74,8 +78,16 @@ dke-ls: | $(DOCTL_CONFIG) ## List K8S clusters
 
 .PHONY: dke-rm
 dke-rm: | $(DOCTL_CONFIG) ## Delete K8S cluster
-	$(DOCTL_WITH_CONFIG) kubernetes cluster delete $(NAMESPACE)
+	$(DOCTL_WITH_CONFIG) kubernetes cluster delete $(DKE_CLUSTER)
 
-.PHONY: dke-node-sizes
-dke-node-sizes: | $(DOCTL_CONFIG) ## Show all size options for K8S nodes
+.PHONY: dke-regions
+dke-regions: | $(DOCTL_CONFIG) ## Show all regions where Digital Ocean Kubernetes can be deployed
+	$(DOCTL_WITH_CONFIG) kubernetes options regions
+
+.PHONY: dke-sizes
+dke-sizes: | $(DOCTL_CONFIG) ## Show all size options for DKE nodes
 	$(DOCTL_WITH_CONFIG) kubernetes options sizes
+
+.PHONY: dke-versions
+dke-versions: | $(DOCTL_CONFIG) ## Show all size options for DKE nodes
+	$(DOCTL_WITH_CONFIG) kubernetes options versions
