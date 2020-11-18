@@ -18,7 +18,7 @@ export KUBECONFIG
 $(KUBECONFIG_DIR):
 	@mkdir -p $(@)
 $(KUBECONFIG): | $(KUBECONFIG_DIR) $(KUBECTL) $(DOCTL)
-	$(DOCTL) kubernetes cluster kubeconfig save $(DKE_CLUSTER)
+	$(DOCTL_WITH_CONFIG) kubernetes cluster kubeconfig save $(DKE_CLUSTER)
 .PHONY: kubeconfig
 kubeconfig: $(KUBECONFIG)
 
