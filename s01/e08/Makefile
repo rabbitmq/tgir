@@ -56,7 +56,7 @@ $(DOCTL_CONFIG): | $(DOCTL_CONFIG_DIR) $(DOCTL)
 
 .PHONY: dke
 dke: | $(DOCTL_CONFIG) $(KUBECONFIG_DIR) ## Create Digital Ocean Kubernetes cluster
-	$(DOCTL) kubernetes cluster get $(DKE_CLUSTER) \
+	$(DOCTL) --config $(DOCTL_CONFIG) kubernetes cluster get $(DKE_CLUSTER) \
 	|| time $(DOCTL) kubernetes cluster create $(DKE_CLUSTER) \
 	   --region $(DKE_REGION) \
 	   --auto-upgrade \
@@ -64,4 +64,4 @@ dke: | $(DOCTL_CONFIG) $(KUBECONFIG_DIR) ## Create Digital Ocean Kubernetes clus
 
 .PHONY: dke-regions
 dke-regions: | $(DOCTL_CONFIG) ## Show all regions where Digital Ocean Kubernetes can be deployed
-	$(DOCTL) kubernetes options regions
+	$(DOCTL) --config $(DOCTL_CONFIG) kubernetes options regions
