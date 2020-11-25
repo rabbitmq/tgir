@@ -124,6 +124,11 @@ monitoring-stack: ## Deploy a monitoring stack
 	$(KUBECTL) apply --filename $(MONITORING_DIR)/manifests
 	$(KUBECTL) apply --filename $(MONITORING_DIR)/rabbitmq
 
+teardown-monitoring-stack: ## Teardown the deployed monitoring stack
+	$(KUBECTL) delete --filename $(MONITORING_DIR)/rabbitmq --ignore-not-found
+	$(KUBECTL) delete --filename $(MONITORING_DIR)/manifests --ignore-not-found
+	$(KUBECTL) delete --filename $(MONITORING_DIR)/manifests/setup --ignore-not-found
+
 .PHONY: rabbitmq-operator
 rabbitmq-operator: | $(KUBECONFIG) ## Install RabbitMQ Cluster Operator into K8S
 	$(KUBECTL) apply --filename https://github.com/rabbitmq/cluster-operator/releases/download/$(RABBITMQ_OPERATOR_VERSION)/cluster-operator.yml

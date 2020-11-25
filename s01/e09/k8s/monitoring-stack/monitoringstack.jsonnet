@@ -1,17 +1,26 @@
-local kp =
-	(import 'kube-prometheus/kube-prometheus.libsonnet') +
-	// Uncomment the following imports to enable its patches
-	// (import 'kube-prometheus/kube-prometheus-anti-affinity.libsonnet') +
-	// (import 'kube-prometheus/kube-prometheus-managed-cluster.libsonnet') +
-	// (import 'kube-prometheus/kube-prometheus-node-ports.libsonnet') +
-	// (import 'kube-prometheus/kube-prometheus-static-etcd.libsonnet') +
-	// (import 'kube-prometheus/kube-prometheus-thanos-sidecar.libsonnet') +
-	// (import 'kube-prometheus/kube-prometheus-custom-metrics.libsonnet') +
-	{
-		_config+:: {
-	namespace: 'monitoring',
+local kp = (import 'kube-prometheus/kube-prometheus.libsonnet') + {
+	_config+:: {
+		namespace: 'monitoring',
+	},
+	grafanaDashboards+:: {
+		'erlang-distribution.json': (import 'dashboards/erlang-distribution_rev3.json'),
+		'erlang-distributions-compare.json': (import 'dashboards/erlang-distributions-compare_rev8.json'),
+		'erlang-memory-allocators.json': (import 'dashboards/erlang-memory-allocators_rev3.json'),
+		'rabbitmq-overview.json': (import 'dashboards/rabbitmq-overview_rev7.json'),
+		'rabbitmq-perftest.json': (import 'dashboards/rabbitmq-perftest_rev7.json'),
+		'rabbitmq-quorum-queues-raft.json': (import 'dashboards/rabbitmq-quorum-queues-raft_rev2.json'),
+	},
+	grafana+:: {
+		dashboards+:: {
+			'erlang-distribution.json': (import 'dashboards/erlang-distribution_rev3.json'),
+			'erlang-distributions-compare.json': (import 'dashboards/erlang-distributions-compare_rev8.json'),
+			'erlang-memory-allocators.json': (import 'dashboards/erlang-memory-allocators_rev3.json'),
+			'rabbitmq-overview.json': (import 'dashboards/rabbitmq-overview_rev7.json'),
+			'rabbitmq-perftest.json': (import 'dashboards/rabbitmq-perftest_rev7.json'),
+			'rabbitmq-quorum-queues-raft.json': (import 'dashboards/rabbitmq-quorum-queues-raft_rev2.json'),
 		},
-	};
+	},
+};
 
 { ['setup/0namespace-' + name]: kp.kubePrometheus[name] for name in std.objectFields(kp.kubePrometheus) } +
 {
