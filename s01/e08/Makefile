@@ -15,7 +15,7 @@ KUBECTL_VERSION = 1.19.3
 
 KUBECONFIG_DIR := $(XDG_CONFIG_HOME)/kubectl
 KUBECONFIG := $(KUBECONFIG_DIR)/config
-export KUBECONFIG
+#export KUBECONFIG
 
 $(KUBECONFIG_DIR):
 	@mkdir -p $(@)
@@ -93,3 +93,44 @@ dke-sizes: | $(DOCTL_CONFIG) ## Show all size options for DKE nodes
 .PHONY: dke-versions
 dke-versions: | $(DOCTL_CONFIG) ## Show all size options for DKE nodes
 	$(DOCTL_WITH_CONFIG) kubernetes options versions
+
+
+.PHONY: deploy-traefik
+deploy-traefik: ## Deploy Traefik version 2.x
+	helm repo add traefik https://helm.traefik.io/traefik
+	helm repo update
+	helm install traefik traefik/traefik -f dist/values.yaml
+
+.PHONY: deploy-prepare-env
+deploy-prepare-env: ## Create name space and keys
+	kubectl apply -f dist/0_namespace.yaml
+	rm -rf tls-gen
+	git clone https://github.com/michaelklishin/tls-gen tls-gen
+	cd tls-gen/basic && make
+	kubectl create secret tls rabbitmq-tls-secrest --cert=tls-gen/basic/result/server_certificate.pem --key=tls-gen/basic/result/server_key.pem -n tgir-s01e08
+	kubectl create secret generic ca-secret --from-file=ca.crt=tls-gen/basic/result/ca_certificate.pem -n tgir-s01e08
+
+.PHONY: deploy-rabbitmq-clusters
+deploy-rabbitmq-clusters: ## Deploy the rabbitmq operator 1.1 and two rabbitmq clusters
+	kubectl create -f dist/1_cluster-operator.yml
+	kubectl create -f dist/2_rabbitmq_clusters.yaml
+
+.PHONY: deploy-rabbitmq-ingresses
+deploy-rabbitmq-ingresses: ## Deploy HTTPs and AMQPs traefik ingress
+	kubectl create -f dist/3_traefik-ingress.yaml
+
+.PHONY: deploy-rabbitmq-test-user
+deploy-rabbitmq-test-user: ## Add a test user to make easy the example
+	kubectl exec -it -n tgir-s01e08 rabbitmq-bugs-server-0 -- rabbitmqctl add_user test test
+	kubectl exec -it -n tgir-s01e08 rabbitmq-bugs-server-0 -- rabbitmqctl set_user_tags test administrator
+	kubectl exec -it -n tgir-s01e08 rabbitmq-bugs-server-0 -- rabbitmqctl set_permissions -p / test ".*" ".*" ".*"
+
+.PHONY: deploy
+deploy: deploy-traefik deploy-prepare-env deploy-rabbitmq-clusters deploy-rabbitmq-ingresses ## Deploy all the deploy* stack in order
+
+.PHONY: deploy-clean
+deploy-clean: ##
+	helm uninstall traefik
+	kubectl delete namespace tgir-s01e08
+	kubectl delete -f dist/1_cluster-operator.yml
+
