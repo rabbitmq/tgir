@@ -64,7 +64,7 @@ $(DOCTL_CONFIG): | $(DOCTL_CONFIG_DIR) $(DOCTL)
 	$(DOCTL_WITH_CONFIG) auth init
 
 .PHONY: dke
-dke: | $(DOCTL_CONFIG) $(KUBECONFIG_DIR) ## Create Digital Ocean Kubernetes cluster
+dke: | $(DOCTL_CONFIG) $(KUBECONFIG_DIR) ## Create Digital Ocean Kubernetes (DKE) cluster
 	$(DOCTL_WITH_CONFIG) kubernetes cluster get $(DKE_CLUSTER) \
 	|| time $(DOCTL_WITH_CONFIG) kubernetes cluster create $(DKE_CLUSTER) \
 	   --region $(DKE_REGION) \
@@ -75,15 +75,15 @@ dke: | $(DOCTL_CONFIG) $(KUBECONFIG_DIR) ## Create Digital Ocean Kubernetes clus
 	   --maintenance-window saturday=20:00
 
 .PHONY: dke-ls
-dke-ls: | $(DOCTL_CONFIG) ## List K8S clusters
+dke-ls: | $(DOCTL_CONFIG) ## List DKE clusters
 	$(DOCTL_WITH_CONFIG) kubernetes cluster list
 
 .PHONY: dke-rm
-dke-rm: | $(DOCTL_CONFIG) ## Delete K8S cluster
+dke-rm: | $(DOCTL_CONFIG) ## Delete DKE cluster
 	$(DOCTL_WITH_CONFIG) kubernetes cluster delete $(DKE_CLUSTER)
 
 .PHONY: dke-regions
-dke-regions: | $(DOCTL_CONFIG) ## Show all regions where Digital Ocean Kubernetes can be deployed
+dke-regions: | $(DOCTL_CONFIG) ## Show all regions where DKE can be deployed
 	$(DOCTL_WITH_CONFIG) kubernetes options regions
 
 .PHONY: dke-sizes
