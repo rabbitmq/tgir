@@ -124,13 +124,24 @@ deploy-rabbitmq-test-user: ## Add a test user to make easy the example
 	kubectl exec -it -n tgir-s01e08 rabbitmq-bugs-server-0 -- rabbitmqctl add_user test test
 	kubectl exec -it -n tgir-s01e08 rabbitmq-bugs-server-0 -- rabbitmqctl set_user_tags test administrator
 	kubectl exec -it -n tgir-s01e08 rabbitmq-bugs-server-0 -- rabbitmqctl set_permissions -p / test ".*" ".*" ".*"
+	kubectl exec -it -n tgir-s01e08 rabbitmq-bunny-server-0 -- rabbitmqctl add_user test test
+	kubectl exec -it -n tgir-s01e08 rabbitmq-bunny-server-0 -- rabbitmqctl set_user_tags test administrator
+	kubectl exec -it -n tgir-s01e08 rabbitmq-bunny-server-0 -- rabbitmqctl set_permissions -p / test ".*" ".*" ".*"
 
 .PHONY: deploy
 deploy: deploy-traefik deploy-prepare-env deploy-rabbitmq-clusters deploy-rabbitmq-ingresses ## Deploy all the deploy* stack in order
 
 .PHONY: deploy-clean
 deploy-clean: ##
-	helm uninstall traefik
 	kubectl delete namespace tgir-s01e08
 	kubectl delete -f dist/1_cluster-operator.yml
+	helm uninstall traefik
+
+.PHONY: deploy-rabbitmq-clusters-loadbalancer
+deploy-rabbitmq-clusters-loadbalancer: ## Deploy the rabbitmq node with LoadBalancer option
+	kubectl create -f dist/1_cluster-operator.yml
+	kubectl create -f dist/0_namespace.yaml
+	kubectl create -f dist/0_rabbitmq_clusters-loadbalacer.yaml
+
+
 
