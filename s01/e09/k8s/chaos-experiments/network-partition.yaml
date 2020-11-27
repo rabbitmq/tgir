@@ -1,0 +1,20 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: partition-single-node
+  namespace: chaos-testing
+spec:
+  action: partition
+  mode: one
+  selector:
+    pods:
+      rabbitmq-system:
+      - production-ready-server-1
+  direction: both
+  target:
+    selector:
+      pods:
+        rabbitmq-system:
+        - production-ready-server-0
+        - production-ready-server-2
+    mode: all

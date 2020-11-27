@@ -7,7 +7,7 @@ CLUSTER := $(TGIR)-$(USER)
 CLUSTER_VERSION ?= 1.18.10-gke.2101
 CLUSTER_NODE_VERSION ?= 1.18.10-gke.2101
 CLUSTER_RELEASES ?= rapid
-CLUSTER_NODE_TYPE ?= n2-standard-4
+CLUSTER_NODE_TYPE ?= n2-standard-8
 CLUSTER_NODES_PER_ZONE ?= 2
 
 # You may want to overwrite this with your GCP project, e.g. export GCP_PROJECT=my-project-name
