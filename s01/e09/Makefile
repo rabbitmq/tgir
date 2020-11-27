@@ -116,14 +116,8 @@ k8s-rm: | $(CLOUDSDK_CONFIG) ## Delete our GKE cluster
 chaos-operator: | $(KUBECONFIG) ## Install Chaos Mesh Operator
 	$(CURL) -sSL https://mirrors.chaos-mesh.org/latest/install.sh | bash
 
-# https://github.com/cablespaghetti/k3s-monitoring
-# + https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack
-#
-# Re: manifest_sorter.go:192: info: skipping unknown hook: "crd-install"
-# https://github.com/prometheus-community/helm-charts/issues/155#issuecomment-706743032
-#
 # helm search repo --versions prometheus-community/kube-prometheus-stack
-KUBE_PROMETHEUS_STACK_VERSION ?= 10.3.1
+KUBE_PROMETHEUS_STACK_VERSION ?= 12.2.3
 .PHONY: monitoring-stack
 monitoring-stack: | $(KUBECONFIG) $(HELM) ## Integrate Prometheus & Grafana with K8S, including system metrics
 	$(HELM) repo add prometheus-community https://prometheus-community.github.io/helm-charts
