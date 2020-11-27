@@ -116,18 +116,32 @@ k8s-rm: | $(CLOUDSDK_CONFIG) ## Delete our GKE cluster
 chaos-operator: | $(KUBECONFIG) ## Install Chaos Mesh Operator
 	$(CURL) -sSL https://mirrors.chaos-mesh.org/latest/install.sh | bash
 
-MONITORING_DIR := k8s/monitoring-stack
+# https://github.com/cablespaghetti/k3s-monitoring
+# + https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack
+#
+# Re: manifest_sorter.go:192: info: skipping unknown hook: "crd-install"
+# https://github.com/prometheus-community/helm-charts/issues/155#issuecomment-706743032
+#
+# helm search repo --versions prometheus-community/kube-prometheus-stack
+KUBE_PROMETHEUS_STACK_VERSION ?= 10.3.1
 .PHONY: monitoring-stack
-monitoring-stack: ## Deploy a monitoring stack
-	$(DOCKER) run --user $$(id -u):$$(id -g) --rm -v $(PWD)/$(MONITORING_DIR):/$(MONITORING_DIR) --workdir /$(MONITORING_DIR) quay.io/coreos/jsonnet-ci ./build.sh monitoringstack.jsonnet
-	$(KUBECTL) apply --filename $(MONITORING_DIR)/manifests/setup
-	$(KUBECTL) apply --filename $(MONITORING_DIR)/manifests
-	$(KUBECTL) apply --filename $(MONITORING_DIR)/rabbitmq
+monitoring-stack: | $(KUBECONFIG) $(HELM) ## Integrate Prometheus & Grafana with K8S, including system metrics
+	$(HELM) repo add prometheus-community https://prometheus-community.github.io/helm-charts
+	$(HELM) upgrade prometheus prometheus-community/kube-prometheus-stack \
+	  --install \
+	  --version $(KUBE_PROMETHEUS_STACK_VERSION) \
+	  --values k8s/monitoring-stack/values.yml
+	$(KUBECTL) apply \
+	  --filename k8s/monitoring-stack/traefik-servicemonitor.yml \
+	  --filename k8s/monitoring-stack/dashboards
 
-teardown-monitoring-stack: ## Teardown the deployed monitoring stack
-	$(KUBECTL) delete --filename $(MONITORING_DIR)/rabbitmq --ignore-not-found
-	$(KUBECTL) delete --filename $(MONITORING_DIR)/manifests --ignore-not-found
-	$(KUBECTL) delete --filename $(MONITORING_DIR)/manifests/setup --ignore-not-found
+.PHONY: teardown-monitoring-stack
+teardown-monitoring-stack: | $(KUBECONFIG) $(HELM) ## Teardown the whole monitoring stack
+	$(KUBECTL) delete --filename k8s/monitoring-stack/dashboards
+	$(KUBECTL) delete --filename k8s/monitoring-stack/traefik-servicemonitor.yml
+	$(HELM) uninstall prometheus
+	$(HELM) repo remove prometheus-community
+
 
 .PHONY: rabbitmq-operator
 rabbitmq-operator: | $(KUBECONFIG) ## Install RabbitMQ Cluster Operator into K8S
