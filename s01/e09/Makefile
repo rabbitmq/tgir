@@ -100,6 +100,20 @@ k8s: | $(CLOUDSDK_CONFIG) ## Create a managed K8S cluster on GCP (GKE) - up to 4
 	   --no-enable-master-authorized-networks \
 	   --addons "HorizontalPodAutoscaling,HttpLoadBalancing"
 
+define POSTINSTALL_OUTPUT
+Install complete.
+
+To access Grafana, access https://localhost:3000 after running:
+kubectl --namespace monitoring port-forward svc/grafana 3000
+
+To access Chaos Mesh Dashboard, access https://localhost:2333 after running:
+kubectl --namespace chaos-testing port-forward svc/chaos-dashboard 2333
+endef
+
+.PHONY: all
+all: | k8s monitoring-stack chaos-operator rabbitmq-operator ## Create the cluster & stacks needed for the episode in GKE - Chaos Mesh, Grafana, Prometheus & RabbitMQ Operator
+	@echo "$$POSTINSTALL_OUTPUT"
+
 .PHONY: k8s-help
 k8s-help: | $(CLOUDSDK_CONFIG) ## List all options available when creating a managed K8S cluster on GCP (GKE)
 	$(GCLOUD) container clusters create --help
@@ -120,9 +134,11 @@ chaos-operator: | $(KUBECONFIG) ## Install Chaos Mesh Operator
 KUBE_PROMETHEUS_STACK_VERSION ?= 12.2.3
 .PHONY: monitoring-stack
 monitoring-stack: | $(KUBECONFIG) $(HELM) ## Integrate Prometheus & Grafana with K8S, including system metrics
+	$(KUBECTL) create namespace monitoring
 	$(HELM) repo add prometheus-community https://prometheus-community.github.io/helm-charts
 	$(HELM) upgrade prometheus prometheus-community/kube-prometheus-stack \
 	  --install \
+		--namespace monitoring \
 	  --version $(KUBE_PROMETHEUS_STACK_VERSION) \
 	  --values k8s/monitoring-stack/values.yml
 	$(KUBECTL) apply \
@@ -131,18 +147,18 @@ monitoring-stack: | $(KUBECONFIG) $(HELM) ## Integrate Prometheus & Grafana with
 
 .PHONY: teardown-monitoring-stack
 teardown-monitoring-stack: | $(KUBECONFIG) $(HELM) ## Teardown the whole monitoring stack
-	$(KUBECTL) delete --filename k8s/monitoring-stack/dashboards
-	$(KUBECTL) delete --filename k8s/monitoring-stack/traefik-servicemonitor.yml
-	$(HELM) uninstall prometheus
+	$(KUBECTL) delete --filename k8s/monitoring-stack/dashboards --ignore-not-found
+	$(KUBECTL) delete --filename k8s/monitoring-stack/traefik-servicemonitor.yml --ignore-not-found
+	$(HELM) uninstall --namespace monitoring prometheus
 	$(HELM) repo remove prometheus-community
-
+	$(KUBECTL) delete namespace monitoring --ignore-not-found
 
 .PHONY: rabbitmq-operator
 rabbitmq-operator: | $(KUBECONFIG) ## Install RabbitMQ Cluster Operator into K8S
 	$(KUBECTL) apply --filename https://github.com/rabbitmq/cluster-operator/releases/download/$(RABBITMQ_OPERATOR_VERSION)/cluster-operator.yml
 
-# TODO: Make this not GKE-specific
 .PHONY: rabbitmq-production-cluster
 rabbitmq-production-cluster: | rabbitmq-operator ## Install the production-ready RabbitMQ cluster
-	$(KUBECTL) apply --namespace rabbitmq-system --filename https://raw.githubusercontent.com/rabbitmq/cluster-operator/$(RABBITMQ_OPERATOR_VERSION)/docs/examples/production-ready/ssd-gke.yaml
-	$(KUBECTL) apply --namespace rabbitmq-system --filename https://raw.githubusercontent.com/rabbitmq/cluster-operator/$(RABBITMQ_OPERATOR_VERSION)/docs/examples/production-ready/rabbitmq.yaml
+	$(KUBECTL) apply --namespace rabbitmq-system --filename k8s/rabbitmq/ssd-gke.yaml
+	$(KUBECTL) apply --namespace rabbitmq-system --filename k8s/rabbitmq/pod-disruption-budget.yaml
+	$(KUBECTL) apply --namespace rabbitmq-system --filename k8s/rabbitmq/rabbitmq.yaml

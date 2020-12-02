@@ -12,7 +12,7 @@ namespaceOverride: ""
 
 ## Provide a k8s version to auto dashboard import script example: kubeTargetVersionOverride: 1.16.6
 ##
-kubeTargetVersionOverride: ""
+kubeTargetVersionOverride: "1.18.10"
 
 ## Provide a name to substitute for the full names of resources
 ##
@@ -538,7 +538,7 @@ grafana:
   ingress:
     ## If true, Grafana Ingress will be created
     ##
-    enabled: true
+    enabled: false
 
     ## Annotations for Grafana Ingress
     ##

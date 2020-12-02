@@ -4,6 +4,7 @@ metadata:
   name: erlang-distribution-grafana-dashboard
   labels:
     grafana_dashboard: "true"
+  namespace: monitoring
 data:
   erlang-distribution-grafana-dashboard.json: |-
     {

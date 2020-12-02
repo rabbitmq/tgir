@@ -4,6 +4,7 @@ metadata:
   name: erlang-memory-allocators-grafana-dashboard
   labels:
     grafana_dashboard: "true"
+  namespace: monitoring
 data:
   erlang-memory-allocators-grafana-dashboard.json: |-
     {

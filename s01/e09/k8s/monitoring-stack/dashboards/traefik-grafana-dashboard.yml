@@ -4,6 +4,7 @@ metadata:
   name: traefik-grafana-dashboard
   labels:
     grafana_dashboard: "true"
+  namespace: monitoring
 data:
   traefik-grafana-dashboard.json: |-
     {

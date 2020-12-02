@@ -4,6 +4,7 @@ metadata:
   name: rabbitmq-perftest-grafana-dashboard
   labels:
     grafana_dashboard: "true"
+  namespace: monitoring
 data:
   rabbitmq-perftest-grafana-dashboard.json: |-
     {

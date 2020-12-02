@@ -4,6 +4,7 @@ metadata:
   name: rabbitmq-quorum-queues-raft-grafana-dashboard
   labels:
     grafana_dashboard: "true"
+  namespace: monitoring
 data:
   rabbitmq-quorum-queues-raft-grafana-dashboard.json: |-
     {
