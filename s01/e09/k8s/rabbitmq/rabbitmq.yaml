@@ -89,9 +89,9 @@ spec:
         - name: PRODUCERS
           value: "100"
         - name: PRODUCER_RANDOM_START_DELAY
-          value: "600"
-        - name: RATE
-          value: "10"
+          value: "60"
+        - name: VARIABLE_RATE
+          value: "10:20,11:20,9:20"
         - name: CONFIRM
           value: "1"
         - name: ROUTING_KEY
@@ -103,8 +103,6 @@ spec:
           value: "10"
         - name: CONSUMERS
           value: "100"
-        - name: CONSUMER_LATENCY
-          value: "10000"
 
         - name: HEARTBEAT_SENDER_THREADS
           value: "500"
