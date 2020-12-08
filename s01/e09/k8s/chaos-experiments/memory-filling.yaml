@@ -1,0 +1,16 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: StressChaos
+metadata:
+  name: memory-filling
+  namespace: chaos-testing
+spec:
+  mode: one
+  selector:
+    namespaces:
+    - rabbitmq-system
+    labelSelectors:
+      "app.kubernetes.io/component": "rabbitmq"
+  stressors:
+    memory:
+      workers: 3
+      load: "1Gi"

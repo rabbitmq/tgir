@@ -127,9 +127,15 @@ k8s-ls: | $(CLOUDSDK_CONFIG) ## List all GKE clusters running on GCP
 k8s-rm: | $(CLOUDSDK_CONFIG) ## Delete our GKE cluster
 	$(GCLOUD) container clusters delete $(CLUSTER)
 
+# https://github.com/chaos-mesh/chaos-mesh/releases
+CHAOS_MESH_VERSION := v1.0.2
 .PHONY: chaos-operator
 chaos-operator: | $(KUBECONFIG) ## Install Chaos Mesh Operator
-	$(CURL) -sSL https://mirrors.chaos-mesh.org/latest/install.sh | bash
+	$(CURL) -sSL https://mirrors.chaos-mesh.org/$(CHAOS_MESH_VERSION)/install.sh | bash
+
+.PHONY: teardown-chaos-operator
+teardown-chaos-operator: | $(KUBECONFIG) ## Remove Chaos Mesh Operator
+	$(CURL) -sSL https://mirrors.chaos-mesh.org/$(CHAOS_MESH_VERSION)/install.sh | bash -s -- --template | $(KUBECTL) delete -f -
 
 # helm search repo --versions prometheus-community/kube-prometheus-stack
 KUBE_PROMETHEUS_STACK_VERSION ?= 12.2.3
@@ -169,9 +175,9 @@ rabbitmq-production-cluster: | rabbitmq-operator ## Install the production-ready
 	$(KUBECTL) apply --namespace rabbitmq-system --filename k8s/rabbitmq/clusters/partition-ignore.yaml
 
 .PHONY: teardown-production-cluster
-teardown-rabbitmq-production-cluster: | $(KUBECTL) ## Teardown the production-ready RabbitMQ cluster
+teardown-production-cluster: | $(KUBECTL) ## Teardown the production-ready RabbitMQ cluster
 	$(KUBECTL) delete --namespace rabbitmq-system --ignore-not-found --filename k8s/rabbitmq/clusters/partition-ignore.yaml
-	$(KUBECTL) delete --namespace rabbitmq-system --ignore-not-found --filename k8s/rabbitmq/ssd-gke.yaml
+	$(KUBECTL) delete --ignore-not-found --filename k8s/rabbitmq/ssd-gke.yaml
 	$(KUBECTL) delete --namespace rabbitmq-system --ignore-not-found --filename k8s/rabbitmq/pod-disruption-budget.yaml
 
 .PHONY: quorum-clients

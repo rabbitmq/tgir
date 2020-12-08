@@ -1,0 +1,16 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: IoChaos
+metadata:
+  name: disk-latency
+  namespace: rabbitmq-system
+spec:
+  action: latency
+  mode: one
+  selector:
+    namespaces:
+    - rabbitmq-system
+    labelSelectors:
+      "app.kubernetes.io/component": "rabbitmq"
+  delay: "1000ms"
+  volumePath: "/var/lib/rabbitmq/mnesia/"
+  path: "/var/lib/rabbitmq/mnesia/**/*"
