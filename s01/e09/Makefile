@@ -158,8 +158,59 @@ teardown-monitoring-stack: | $(KUBECONFIG) $(HELM) ## Teardown the whole monitor
 rabbitmq-operator: | $(KUBECONFIG) ## Install RabbitMQ Cluster Operator into K8S
 	$(KUBECTL) apply --filename https://github.com/rabbitmq/cluster-operator/releases/download/$(RABBITMQ_OPERATOR_VERSION)/cluster-operator.yml
 
+.PHONY: teardown-rabbitmq-operator
+teardown-rabbitmq-operator: | $(KUBECONFIG) ## Teardown the RabbitMQ Cluster Operator
+	$(KUBECTL) delete --ignore-not-found --filename https://github.com/rabbitmq/cluster-operator/releases/download/$(RABBITMQ_OPERATOR_VERSION)/cluster-operator.yml
+
 .PHONY: rabbitmq-production-cluster
 rabbitmq-production-cluster: | rabbitmq-operator ## Install the production-ready RabbitMQ cluster
 	$(KUBECTL) apply --namespace rabbitmq-system --filename k8s/rabbitmq/ssd-gke.yaml
 	$(KUBECTL) apply --namespace rabbitmq-system --filename k8s/rabbitmq/pod-disruption-budget.yaml
 	$(KUBECTL) apply --namespace rabbitmq-system --filename k8s/rabbitmq/clusters/partition-ignore.yaml
+
+.PHONY: teardown-production-cluster
+teardown-rabbitmq-production-cluster: | $(KUBECTL) ## Teardown the production-ready RabbitMQ cluster
+	$(KUBECTL) delete --namespace rabbitmq-system --ignore-not-found --filename k8s/rabbitmq/clusters/partition-ignore.yaml
+	$(KUBECTL) delete --namespace rabbitmq-system --ignore-not-found --filename k8s/rabbitmq/ssd-gke.yaml
+	$(KUBECTL) delete --namespace rabbitmq-system --ignore-not-found --filename k8s/rabbitmq/pod-disruption-budget.yaml
+
+.PHONY: quorum-clients
+quorum-clients: | $(KUBECONFIG) ## Create RabbitMQ clients to start 1000 quorum queues
+	$(KUBECTL) apply --namespace rabbitmq-system --filename k8s/rabbitmq/clients/perf-test-quorum.yaml
+
+.PHONY: teardown-quorum-clients
+teardown-quorum-clients: | $(KUBECONFIG) ## Delete quorum queue RabbitMQ clients
+	$(KUBECTL) delete --namespace rabbitmq-system --ignore-not-found --filename k8s/rabbitmq/clients/perf-test-quorum.yaml
+
+.PHONY: rebalance-queues
+rebalance-queues: | $(KUBECONFIG) ## Exec into RabbitMQ Pod to rebalance queue leaders across cluster
+	$(KUBECTL) exec --namespace rabbitmq-system svc/production-ready -- rabbitmq-queues rebalance all
+
+.PHONY: clear-chaos
+clear-chaos: | $(KUBECONFIG) ## Clear any Chaos Mesh events from the cluster
+	$(KUBECTL) delete --ignore-not-found --filename k8s/chaos-experiments
+
+.PHONY: chaos-az-latency
+chaos-az-latency: | $(KUBECONFIG) ## Introduce 1s of latency to&from a random pod in the cluster for 1m every 5m
+	$(KUBECTL) apply --filename k8s/chaos-experiments/cluster-latency.yaml
+
+.PHONY: chaos-az-partition
+chaos-az-partition: | $(KUBECONFIG) ## Create a network partition seperating one RabbitMQ node completely from the other two
+	$(KUBECTL) apply --filename k8s/chaos-experiments/cluster-partition.yaml
+
+.PHONY: chaos-intra-node-partition
+chaos-intra-node-partition: | $(KUBECONFIG) ## Create a network partition only between two of the nodes, leaving other connections intact
+	$(KUBECTL) apply --filename k8s/chaos-experiments/intra-node-partition.yaml
+
+.PHONY: chaos-cpu-stealing
+chaos-cpu-stealing: | $(KUBECONFIG) ## Cause CPU pressure in a random RabbitMQ pod, simulating CPU stealing
+	$(KUBECTL) apply --filename k8s/chaos-experiments/cpu-stealing.yaml
+
+.PHONY: chaos-memory-filling
+chaos-memory-filling: | $(KUBECONFIG) ## Cause memory pressure in a random RabbitMQ pod, reducing available memory for RabbitMQ
+	$(KUBECTL) apply --filename k8s/chaos-experiments/memory-filling.yaml
+
+.PHONY: chaos-slow-disk
+chaos-slow-disk: | $(KUBECONFIG) ## Add latency to file I/O operations to simulate a slow disk on a random RabbitMQ pod
+	$(KUBECTL) apply --filename k8s/chaos-experiments/disk-latency.yaml
+
