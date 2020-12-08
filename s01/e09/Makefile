@@ -3,9 +3,9 @@ include $(dir $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST)))/../../Makefile
 TGIR := tgir-s01e09
 CLUSTER := $(TGIR)-$(USER)
 # Find out what versions are available: make k8s-versions
-# K8S versions valid at 25 November 2020
-CLUSTER_VERSION ?= 1.18.10-gke.2101
-CLUSTER_NODE_VERSION ?= 1.18.10-gke.2101
+# K8S versions valid at 04 December 2020
+CLUSTER_VERSION ?= 1.18.10-gke.2701
+CLUSTER_NODE_VERSION ?= 1.18.10-gke.2701
 CLUSTER_RELEASES ?= rapid
 CLUSTER_NODE_TYPE ?= n2-standard-4
 CLUSTER_NODES_PER_ZONE ?= 2
@@ -16,7 +16,7 @@ GCP_PROJECT ?= cf-rabbitmq-core
 GCP_REGION ?= europe-west2
 
 # https://github.com/rabbitmq/cluster-operator/releases
-RABBITMQ_OPERATOR_VERSION := v1.1.0
+RABBITMQ_OPERATOR_VERSION := v1.2.0
 
 KUBECONFIG_DIR := $(XDG_CONFIG_HOME)/kubectl
 KUBECONFIG := $(KUBECONFIG_DIR)/config
@@ -47,6 +47,7 @@ k9: | $(K9S) $(KUBECONFIG)
 	$(K9S) --namespace default --headless
 
 define ENV
+export PATH=$(LOCAL_BIN):$$PATH
 export GCP_PROJECT="$(GCP_PROJECT)"
 export GCP_REGION="$(GCP_REGION)"
 export KUBECONFIG="$(KUBECONFIG)"
@@ -57,7 +58,7 @@ unalias m 2>/dev/null; alias m=make
 endef
 export ENV
 .PHONY: env
-env:: | $(CLOUDSDK_CONFIG) $(KUBECONFIG_DIR) ## Configure shell env - eval "$(make env)" OR source .env
+env:: | $(CLOUDSDK_CONFIG) $(KUBECONFIG_DIR) $(KUBECTL) ## Configure shell env - eval "$(make env)" OR source .env
 	@echo "$$ENV"
 
 define LIST_INSTANCES
