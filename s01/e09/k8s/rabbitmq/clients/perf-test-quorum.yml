@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quorum-rabbitmq-perf-test
+  namespace: rabbitmq-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: quorum-rabbitmq-perf-test
+  template:
+    metadata:
+      labels:
+        app: quorum-rabbitmq-perf-test
+      annotations:
+        prometheus.io/port: "8080"
+        prometheus.io/scrape: "true"
+    spec:
+      containers:
+      - name: perftest
+        # https://hub.docker.com/r/pivotalrabbitmq/perf-test/tags
+        image: pivotalrabbitmq/perf-test:2.12.0
+        resources:
+          limits:
+            cpu: 2
+            memory: 2G
+          requests:
+            cpu: 1
+            memory: 1G
+        command:
+          - /bin/bash
+          - -c
+        args:
+          - |-
+            bin/runjava com.rabbitmq.perf.PerfTest \
+              --uri "amqp://$RABBITMQ_USER:$RABBITMQ_PASS@$RABBITMQ_SERVICE:5672/%2f"
+        env:
+        - name: RABBITMQ_USER
+          valueFrom:
+            secretKeyRef:
+              name: production-ready-default-user
+              key: username
+        - name: RABBITMQ_PASS
+          valueFrom:
+            secretKeyRef:
+              name: production-ready-default-user
+              key: password
+        - name: RABBITMQ_SERVICE
+          value: production-ready
+
+        - name: PRODUCER_SCHEDULER_THREADS
+          value: "10"
+        - name: PRODUCERS
+          value: "100"
+        - name: PRODUCER_RANDOM_START_DELAY
+          value: "60"
+        - name: RATE
+          value: "10"
+        - name: ROUTING_KEY
+          value: "production-non-durable"
+        - name: SIZE
+          value: "100"
+
+        - name: CONSUMERS_THREAD_POOLS
+          value: "10"
+        - name: CONSUMERS
+          value: "100"
+
+        - name: HEARTBEAT_SENDER_THREADS
+          value: "500"
+        - name: NIO_THREAD_POOL
+          value: "500"
+
+        - name: METRICS_PROMETHEUS
+          value: "true"
+        - name: CONFIRM
+          value: "1"
+        - name: JSON_BODY
+          value: "true"
+        - name: SIZE
+          value: "100"
+        - name: FLAG
+          value: "persistent"
+        - name: ROUTING_KEY
+          value: "quorum"
+
+        - name: QUEUE_PATTERN
+          value: "quorum-%d"
+        - name: QUEUE_PATTERN_FROM
+          value: "1"
+        - name: QUEUE_PATTERN_TO
+          value: "100"
+        - name: QUEUE_ARGS
+          value: "x-max-length=1000,x-queue-type=quorum,x-max-in-memory-bytes=10000000"
+        - name: AUTO_DELETE
+          value: "false"

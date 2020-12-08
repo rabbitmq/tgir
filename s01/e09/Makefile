@@ -162,4 +162,4 @@ rabbitmq-operator: | $(KUBECONFIG) ## Install RabbitMQ Cluster Operator into K8S
 rabbitmq-production-cluster: | rabbitmq-operator ## Install the production-ready RabbitMQ cluster
 	$(KUBECTL) apply --namespace rabbitmq-system --filename k8s/rabbitmq/ssd-gke.yaml
 	$(KUBECTL) apply --namespace rabbitmq-system --filename k8s/rabbitmq/pod-disruption-budget.yaml
-	$(KUBECTL) apply --namespace rabbitmq-system --filename k8s/rabbitmq/rabbitmq.yaml
+	$(KUBECTL) apply --namespace rabbitmq-system --filename k8s/rabbitmq/clusters/partition-ignore.yaml
