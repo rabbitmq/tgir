@@ -162,31 +162,31 @@ teardown-rabbitmq-operator: | $(KUBECONFIG) ## Teardown the RabbitMQ Cluster Ope
 
 .PHONY: rabbitmq-production-cluster
 rabbitmq-production-cluster: | rabbitmq-operator ## Install the production-ready RabbitMQ cluster
-	$(KUBECTL) apply --namespace rabbitmq-system --filename k8s/rabbitmq/ssd-gke.yaml
-	$(KUBECTL) apply --namespace rabbitmq-system --filename k8s/rabbitmq/pod-disruption-budget.yaml
-	$(KUBECTL) apply --namespace rabbitmq-system --filename k8s/rabbitmq/clusters/partition-ignore.yaml
+	$(KUBECTL) apply --filename k8s/rabbitmq/ssd-gke.yaml
+	$(KUBECTL) apply --filename k8s/rabbitmq/pod-disruption-budget.yaml
+	$(KUBECTL) apply --filename k8s/rabbitmq/clusters/partition-ignore.yaml
 
 .PHONY: teardown-production-cluster
 teardown-production-cluster: | $(KUBECTL) ## Teardown the production-ready RabbitMQ cluster
-	$(KUBECTL) delete --namespace rabbitmq-system --ignore-not-found --filename k8s/rabbitmq/clusters/partition-ignore.yaml
+	$(KUBECTL) delete --ignore-not-found --filename k8s/rabbitmq/clusters/partition-ignore.yaml
 	$(KUBECTL) delete --ignore-not-found --filename k8s/rabbitmq/ssd-gke.yaml
-	$(KUBECTL) delete --namespace rabbitmq-system --ignore-not-found --filename k8s/rabbitmq/pod-disruption-budget.yaml
+	$(KUBECTL) delete --ignore-not-found --filename k8s/rabbitmq/pod-disruption-budget.yaml
 
 .PHONY: quorum-clients
 quorum-clients: | $(KUBECONFIG) ## Create RabbitMQ clients to start 1000 quorum queues
-	$(KUBECTL) apply --namespace rabbitmq-system --filename k8s/rabbitmq/clients/perf-test-quorum.yaml
+	$(KUBECTL) apply --filename k8s/rabbitmq/clients/perf-test-quorum.yaml
 
 .PHONY: teardown-quorum-clients
 teardown-quorum-clients: | $(KUBECONFIG) ## Delete quorum queue RabbitMQ clients
-	$(KUBECTL) delete --namespace rabbitmq-system --ignore-not-found --filename k8s/rabbitmq/clients/perf-test-quorum.yaml
+	$(KUBECTL) delete --ignore-not-found --filename k8s/rabbitmq/clients/perf-test-quorum.yaml
 
 .PHONY: rebalance-queues
 rebalance-queues: | $(KUBECONFIG) ## Exec into RabbitMQ Pod to rebalance queue leaders across cluster
-	$(KUBECTL) exec --namespace rabbitmq-system svc/production-ready -- rabbitmq-queues rebalance all
+	$(KUBECTL) exec svc/production-ready -- rabbitmq-queues rebalance all
 
 .PHONY: rabbitmq-observer
 rabbitmq-observer: | $(KUBECONFIG) ## Exec into RabbitMQ Pod to launch the RabbitMQ diagnostics observer
-	$(KUBECTL) exec --namespace rabbitmq-system svc/production-ready -- rabbitmq-diagnostics observer
+	$(KUBECTL) exec svc/production-ready -- rabbitmq-diagnostics observer
 
 .PHONY: clear-chaos
 clear-chaos: | $(KUBECONFIG) ## Clear any Chaos Mesh events from the cluster

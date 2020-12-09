@@ -8,13 +8,13 @@ spec:
   mode: one
   selector:
     pods:
-      rabbitmq-system:
+      default:
       - production-ready-server-1
   direction: both
   target:
     selector:
       pods:
-        rabbitmq-system:
+        default:
         - production-ready-server-0
         - production-ready-server-2
     mode: all

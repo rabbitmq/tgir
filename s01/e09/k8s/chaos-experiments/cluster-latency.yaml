@@ -8,14 +8,14 @@ spec:
   mode: one
   selector:
     namespaces:
-    - rabbitmq-system
+    - default
     labelSelectors:
       "app.kubernetes.io/component": "rabbitmq"
   direction: both
   target:
     selector:
       namespaces:
-      - rabbitmq-system
+      - default
       labelSelectors:
         "app.kubernetes.io/component": "rabbitmq"
     mode: all

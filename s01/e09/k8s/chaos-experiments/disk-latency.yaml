@@ -2,13 +2,13 @@ apiVersion: chaos-mesh.org/v1alpha1
 kind: IoChaos
 metadata:
   name: disk-latency
-  namespace: rabbitmq-system
+  namespace: chaos-testing
 spec:
   action: latency
   mode: one
   selector:
     namespaces:
-    - rabbitmq-system
+    - default
     labelSelectors:
       "app.kubernetes.io/component": "rabbitmq"
   delay: "1000ms"

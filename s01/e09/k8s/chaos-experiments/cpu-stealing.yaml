@@ -7,7 +7,7 @@ spec:
   mode: one
   selector:
     namespaces:
-    - rabbitmq-system
+    - default
     labelSelectors:
       "app.kubernetes.io/component": "rabbitmq"
   stressors:
