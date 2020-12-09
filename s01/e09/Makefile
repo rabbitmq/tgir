@@ -186,7 +186,7 @@ rebalance-queues: | $(KUBECONFIG) ## Exec into RabbitMQ Pod to rebalance queue l
 
 .PHONY: rabbitmq-observer
 rabbitmq-observer: | $(KUBECONFIG) ## Exec into RabbitMQ Pod to launch the RabbitMQ diagnostics observer
-	$(KUBECTL) exec svc/production-ready -- rabbitmq-diagnostics observer
+	$(KUBECTL) exec -it svc/production-ready -- rabbitmq-diagnostics observer
 
 .PHONY: clear-chaos
 clear-chaos: | $(KUBECONFIG) ## Clear any Chaos Mesh events from the cluster
