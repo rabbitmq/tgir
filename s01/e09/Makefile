@@ -101,19 +101,11 @@ k8s: | $(CLOUDSDK_CONFIG) ## Create a managed K8S cluster on GCP (GKE) - up to 4
 	   --no-enable-master-authorized-networks \
 	   --addons "HorizontalPodAutoscaling,HttpLoadBalancing"
 
-define POSTINSTALL_OUTPUT
-Install complete.
-
-To access Grafana, access https://localhost:3000 after running:
-kubectl --namespace monitoring port-forward svc/grafana 3000
-
-To access Chaos Mesh Dashboard, access https://localhost:2333 after running:
-kubectl --namespace chaos-testing port-forward svc/chaos-dashboard 2333
-endef
-
 .PHONY: all
 all: | k8s monitoring-stack chaos-operator rabbitmq-operator ## Create the cluster & stacks needed for the episode in GKE - Chaos Mesh, Grafana, Prometheus & RabbitMQ Operator
-	@echo "$$POSTINSTALL_OUTPUT"
+
+.PHONY: base
+base: | k8s monitoring-stack rabbitmq-operator ## Create the cluster & all stacks needed for the episode in GKE, except for Chaos Mesh
 
 .PHONY: k8s-help
 k8s-help: | $(CLOUDSDK_CONFIG) ## List all options available when creating a managed K8S cluster on GCP (GKE)
