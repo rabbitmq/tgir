@@ -53,13 +53,13 @@ spec:
         - name: PRODUCERS
           value: "100"
         - name: PRODUCER_RANDOM_START_DELAY
-          value: "60"
+          value: "30"
         - name: RATE
           value: "10"
         - name: ROUTING_KEY
           value: "production-non-durable"
         - name: SIZE
-          value: "100"
+          value: "10000"
 
         - name: CONSUMERS_THREAD_POOLS
           value: "10"

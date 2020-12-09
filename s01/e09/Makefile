@@ -197,7 +197,7 @@ clear-chaos: | $(KUBECONFIG) ## Clear any Chaos Mesh events from the cluster
 	$(KUBECTL) delete --ignore-not-found --filename k8s/chaos-experiments
 
 .PHONY: chaos-az-latency
-chaos-az-latency: | $(KUBECONFIG) ## Introduce 1s of latency to&from a random pod in the cluster for 1m every 5m
+chaos-az-latency: | $(KUBECONFIG) ## Introduce 1s of latency to&from a random pod in the cluster
 	$(KUBECTL) apply --filename k8s/chaos-experiments/cluster-latency.yaml
 
 .PHONY: chaos-az-partition

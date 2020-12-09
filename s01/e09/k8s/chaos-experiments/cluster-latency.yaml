@@ -19,8 +19,5 @@ spec:
       labelSelectors:
         "app.kubernetes.io/component": "rabbitmq"
     mode: all
-  duration: "1m"
-  scheduler:
-    cron: "@every 5m"
   delay:
     latency: "1000ms"

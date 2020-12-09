@@ -2,7 +2,6 @@ apiVersion: rabbitmq.com/v1beta1
 kind: RabbitmqCluster
 metadata:
   name: production-ready
-  namespace: rabbitmq-system
 spec:
   replicas: 3
   resources:
