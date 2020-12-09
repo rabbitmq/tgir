@@ -192,6 +192,10 @@ teardown-quorum-clients: | $(KUBECONFIG) ## Delete quorum queue RabbitMQ clients
 rebalance-queues: | $(KUBECONFIG) ## Exec into RabbitMQ Pod to rebalance queue leaders across cluster
 	$(KUBECTL) exec --namespace rabbitmq-system svc/production-ready -- rabbitmq-queues rebalance all
 
+.PHONY: rabbitmq-observer
+rabbitmq-observer: | $(KUBECONFIG) ## Exec into RabbitMQ Pod to launch the RabbitMQ diagnostics observer
+	$(KUBECTL) exec --namespace rabbitmq-system svc/production-ready -- rabbitmq-diagnostics observer
+
 .PHONY: clear-chaos
 clear-chaos: | $(KUBECONFIG) ## Clear any Chaos Mesh events from the cluster
 	$(KUBECTL) delete --ignore-not-found --filename k8s/chaos-experiments
