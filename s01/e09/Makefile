@@ -172,6 +172,18 @@ teardown-production-cluster: | $(KUBECTL) ## Teardown the production-ready Rabbi
 	$(KUBECTL) delete --ignore-not-found --filename k8s/rabbitmq/ssd-gke.yaml
 	$(KUBECTL) delete --ignore-not-found --filename k8s/rabbitmq/pod-disruption-budget.yaml
 
+.PHONY: rabbitmq-pause-minority-cluster
+rabbitmq-pause-minority-cluster: | rabbitmq-operator ## Install the production-ready RabbitMQ cluster with pause_minority partition handling
+	$(KUBECTL) apply --filename k8s/rabbitmq/ssd-gke.yaml
+	$(KUBECTL) apply --filename k8s/rabbitmq/pod-disruption-budget.yaml
+	$(KUBECTL) apply --filename k8s/rabbitmq/clusters/partition-pause-minority.yaml
+
+.PHONY: teardown-pause-minority-cluster
+teardown-pause-minority-cluster: | $(KUBECTL) ## Teardown the pause_minority production-ready RabbitMQ cluster
+	$(KUBECTL) delete --ignore-not-found --filename k8s/rabbitmq/clusters/partition-pause-minority.yaml
+	$(KUBECTL) delete --ignore-not-found --filename k8s/rabbitmq/ssd-gke.yaml
+	$(KUBECTL) delete --ignore-not-found --filename k8s/rabbitmq/pod-disruption-budget.yaml
+
 .PHONY: quorum-clients
 quorum-clients: | $(KUBECONFIG) ## Create RabbitMQ clients to start 1000 quorum queues
 	$(KUBECTL) apply --filename k8s/rabbitmq/clients/perf-test-quorum.yaml
