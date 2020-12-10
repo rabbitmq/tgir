@@ -4,8 +4,8 @@ TGIR := tgir-s01e09
 CLUSTER := $(TGIR)-$(USER)
 # Find out what versions are available: make k8s-versions
 # K8S versions valid at 04 December 2020
-CLUSTER_VERSION ?= 1.18.10-gke.2701
-CLUSTER_NODE_VERSION ?= 1.18.10-gke.2701
+CLUSTER_VERSION ?= 1.18.12-gke.1200
+CLUSTER_NODE_VERSION ?= 1.18.12-gke.1200
 CLUSTER_RELEASES ?= rapid
 CLUSTER_NODE_TYPE ?= n2-standard-4
 CLUSTER_NODES_PER_ZONE ?= 2
@@ -137,7 +137,7 @@ monitoring-stack: | $(KUBECONFIG) $(HELM) ## Integrate Prometheus & Grafana with
 	$(HELM) repo add prometheus-community https://prometheus-community.github.io/helm-charts
 	$(HELM) upgrade prometheus prometheus-community/kube-prometheus-stack \
 	  --install \
-		--namespace monitoring \
+	  --namespace monitoring \
 	  --version $(KUBE_PROMETHEUS_STACK_VERSION) \
 	  --values k8s/monitoring-stack/values.yml
 	$(KUBECTL) apply \
