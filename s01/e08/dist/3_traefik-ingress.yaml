@@ -5,7 +5,7 @@ metadata:
   namespace: tgir-s01e08
 spec:
   entryPoints:
-    - management-tls
+    - http-mgm-tls
   routes:
   - match: Host(`tgir-s01e08-bugs.rabbitmq.com`)
     kind: Rule
@@ -27,7 +27,7 @@ metadata:
   namespace: tgir-s01e08
 spec:
   entryPoints:
-    - management-tls
+    - http-mgm-tls
   routes:
     - match: Host(`tgir-s01e08-bunny.rabbitmq.com`)
       kind: Rule

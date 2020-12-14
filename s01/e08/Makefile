@@ -132,7 +132,7 @@ deploy-rabbitmq-test-user: ## Add a test user to make easy the example
 deploy: deploy-traefik deploy-prepare-env deploy-rabbitmq-clusters deploy-rabbitmq-ingresses ## Deploy all the deploy* stack in order
 
 .PHONY: deploy-clean
-deploy-clean: ##
+deploy-clean: ## Remove traefik and the namespace "tgir-s01e08"
 	kubectl delete namespace tgir-s01e08
 	kubectl delete -f dist/1_cluster-operator.yml
 	helm uninstall traefik

@@ -242,12 +242,12 @@ ports:
     expose: true
     exposedPort: 5672
     protocol: TCP
-  httprmq:
+  http-management:
     port: 15672
     expose: true
     exposedPort: 15672
     protocol: TCP
-  https-rmq:
+  http-mgm-tls:
     port: 15671
     expose: true
     exposedPort: 15671

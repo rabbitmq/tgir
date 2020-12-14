@@ -4,7 +4,7 @@ metadata:
   name: rabbitmq-bugs
   namespace: tgir-s01e08
 spec:
-  replicas: 2
+  replicas: 1
   tls:
     secretName:  rabbitmq-tls-secrest
     caSecretName: ca-secret
@@ -15,7 +15,7 @@ metadata:
   name: rabbitmq-bunny
   namespace: tgir-s01e08
 spec:
-  replicas: 2
+  replicas: 1
   tls:
     secretName:  rabbitmq-tls-secrest
     caSecretName: ca-secret
