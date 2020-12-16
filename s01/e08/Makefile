@@ -15,17 +15,13 @@ KUBECTL_VERSION = 1.19.3
 
 KUBECONFIG_DIR := $(XDG_CONFIG_HOME)/kubectl
 KUBECONFIG := $(KUBECONFIG_DIR)/config
-#export KUBECONFIG
+export KUBECONFIG
 
 $(KUBECONFIG_DIR):
 	@mkdir -p $(@)
-$(KUBECONFIG): | $(KUBECONFIG_DIR) $(KUBECTL) $(DOCTL)
-	$(DOCTL_WITH_CONFIG) kubernetes cluster kubeconfig save $(DKE_CLUSTER)
-.PHONY: kubeconfig
-kubeconfig: $(KUBECONFIG)
 
 .PHONY: k9s
-k9s: | $(K9S) $(KUBECONFIG) ## Interact with our K3S instance via a terminal UI
+k9s: | $(K9S) $(KUBECONFIG) ## Interact with our K8S cluster via a terminal UI
 	$(K9S) --all-namespaces
 
 define ENV
@@ -41,7 +37,7 @@ env:: | $(KUBECONFIG_DIR) ## Configure shell env - eval "$(make env)" OR source 
 	@echo "$$ENV"
 
 DOCTL_RELEASES := https://github.com/digitalocean/doctl/releases
-DOCTL_VERSION := 1.52.0
+DOCTL_VERSION := 1.54.0
 DOCTL_BIN_DIR := doctl-$(DOCTL_VERSION)-$(platform)-amd64
 DOCTL_URL := https://github.com/digitalocean/doctl/releases/download/v$(DOCTL_VERSION)/doctl-$(DOCTL_VERSION)-$(platform)-amd64.tar.gz
 DOCTL := $(LOCAL_BIN)/$(DOCTL_BIN_DIR)/doctl
@@ -63,6 +59,13 @@ DOCTL_WITH_CONFIG = $(DOCTL) --config $(DOCTL_CONFIG)
 $(DOCTL_CONFIG): | $(DOCTL_CONFIG_DIR) $(DOCTL)
 	$(DOCTL_WITH_CONFIG) auth init
 
+.PHONY: all
+all:: ## Setup everything
+
+.PHONY: clean
+clean:: ## Remove all installed resources
+
+
 .PHONY: dke
 dke: | $(DOCTL_CONFIG) $(KUBECONFIG_DIR) ## Create Digital Ocean Kubernetes (DKE) cluster
 	$(DOCTL_WITH_CONFIG) kubernetes cluster get $(DKE_CLUSTER) \
@@ -73,6 +76,11 @@ dke: | $(DOCTL_CONFIG) $(KUBECONFIG_DIR) ## Create Digital Ocean Kubernetes (DKE
 	   --count $(DKE_NODES_COUNT) \
 	   --auto-upgrade \
 	   --maintenance-window saturday=20:00
+
+$(KUBECONFIG): | $(KUBECONFIG_DIR) $(KUBECTL) $(DOCTL)
+	$(DOCTL_WITH_CONFIG) kubernetes cluster kubeconfig save $(DKE_CLUSTER)
+.PHONY: kubeconfig
+kubeconfig: $(KUBECONFIG)
 
 .PHONY: dke-ls
 dke-ls: | $(DOCTL_CONFIG) ## List DKE clusters
@@ -94,54 +102,78 @@ dke-sizes: | $(DOCTL_CONFIG) ## Show all size options for DKE nodes
 dke-versions: | $(DOCTL_CONFIG) ## Show all size options for DKE nodes
 	$(DOCTL_WITH_CONFIG) kubernetes options versions
 
+# helm search repo --versions traefik/traefik
+TRAEFIK_VERSION ?= 9.11.0
+.PHONY: traefik
+traefik: | $(HELM) $(KUBECONFIG) ## Deploy Traefik
+	$(HELM) repo add traefik https://helm.traefik.io/traefik
+	$(HELM) install traefik traefik/traefik \
+	  --version $(TRAEFIK_VERSION) \
+	  --values yaml/values.yaml
+all:: traefik
 
-.PHONY: deploy-traefik
-deploy-traefik: ## Deploy Traefik version 2.x
-	helm repo add traefik https://helm.traefik.io/traefik
-	helm repo update
-	helm install traefik traefik/traefik -f dist/values.yaml
+traefik-rm: | $(HELM) $(KUBECONFIG) ## Remove Traefik
+	$(HELM) uninstall traefik \
+	; true
+clean:: traefik-rm
 
-.PHONY: deploy-prepare-env
-deploy-prepare-env: ## Create name space and keys
-	kubectl apply -f dist/0_namespace.yaml
-	rm -rf tls-gen
-	git clone https://github.com/michaelklishin/tls-gen tls-gen
-	cd tls-gen/basic && make
-	kubectl create secret tls rabbitmq-tls-secrest --cert=tls-gen/basic/result/server_certificate.pem --key=tls-gen/basic/result/server_key.pem -n tgir-s01e08
-	kubectl create secret generic ca-secret --from-file=ca.crt=tls-gen/basic/result/ca_certificate.pem -n tgir-s01e08
+# https://github.com/jetstack/cert-manager/releases
+CERT_MANAGER_VERSION ?= 1.1.0
+CERT_MANAGER_MANIFEST = https://github.com/jetstack/cert-manager/releases/download/v$(CERT_MANAGER_VERSION)/cert-manager.yaml
+.PHONY: cert-manager
+cert-manager: | kubeconfig
+	$(KUBECTL) apply --filename $(CERT_MANAGER_MANIFEST)
+all:: cert-manager
 
-.PHONY: deploy-rabbitmq-clusters
-deploy-rabbitmq-clusters: ## Deploy the rabbitmq operator 1.1 and two rabbitmq clusters
-	kubectl create -f dist/1_cluster-operator.yml
-	kubectl create -f dist/2_rabbitmq_clusters.yaml
+cert-manager-rm:
+	$(KUBECTL) delete --filename $(CERT_MANAGER_MANIFEST)
+clean:: cert-manager-rm
 
-.PHONY: deploy-rabbitmq-ingresses
-deploy-rabbitmq-ingresses: ## Deploy HTTPs and AMQPs traefik ingress
-	kubectl create -f dist/3_traefik-ingress.yaml
+# https://github.com/rabbitmq/cluster-operator/releases
+CLUSTER_OPERATOR_VERSION ?= 1.2.0
+CLUSTER_OPERATOR_MANIFEST = https://github.com/rabbitmq/cluster-operator/releases/download/v$(CLUSTER_OPERATOR_VERSION)/cluster-operator.yml
+.PHONY: cluster-operator
+cluster-operator: | kubeconfig
+	$(KUBECTL) apply --filename $(CLUSTER_OPERATOR_MANIFEST)
+all:: cluster-operator
 
-.PHONY: deploy-rabbitmq-test-user
-deploy-rabbitmq-test-user: ## Add a test user to make easy the example
-	kubectl exec -it -n tgir-s01e08 rabbitmq-bugs-server-0 -- rabbitmqctl add_user test test
-	kubectl exec -it -n tgir-s01e08 rabbitmq-bugs-server-0 -- rabbitmqctl set_user_tags test administrator
-	kubectl exec -it -n tgir-s01e08 rabbitmq-bugs-server-0 -- rabbitmqctl set_permissions -p / test ".*" ".*" ".*"
-	kubectl exec -it -n tgir-s01e08 rabbitmq-bunny-server-0 -- rabbitmqctl add_user test test
-	kubectl exec -it -n tgir-s01e08 rabbitmq-bunny-server-0 -- rabbitmqctl set_user_tags test administrator
-	kubectl exec -it -n tgir-s01e08 rabbitmq-bunny-server-0 -- rabbitmqctl set_permissions -p / test ".*" ".*" ".*"
+cluster-operator-rm:
+	$(KUBECTL) delete --filename $(CLUSTER_OPERATOR_MANIFEST)
+clean:: cluster-operator-rm
 
-.PHONY: deploy
-deploy: deploy-traefik deploy-prepare-env deploy-rabbitmq-clusters deploy-rabbitmq-ingresses ## Deploy all the deploy* stack in order
+.PHONY: rabbitmq-%
+rabbitmq-%: | kubeconfig ## Deploy a RabbitMQ cluster
+	echo "TODO: create self-signed cert"
+	$(KUBECTL) apply --filename yaml/rabbitmq-$(*).yaml
+all:: rabbitmq-bugs
+all:: rabbitmq-bunny
 
-.PHONY: deploy-clean
-deploy-clean: ## Remove traefik and the namespace "tgir-s01e08"
-	kubectl delete namespace tgir-s01e08
-	kubectl delete -f dist/1_cluster-operator.yml
-	helm uninstall traefik
+.PHONY: rabbitmq-%-public
+rabbitmq-%-public: | kubeconfig ## Expose RabbitMQ cluster via a public IP
+	kubectl apply --filename yaml/rabbitmq-$(*)-public.yaml
 
-.PHONY: deploy-rabbitmq-clusters-loadbalancer
-deploy-rabbitmq-clusters-loadbalancer: ## Deploy the rabbitmq node with LoadBalancer option
-	kubectl create -f dist/1_cluster-operator.yml
-	kubectl create -f dist/0_namespace.yaml
-	kubectl create -f dist/0_rabbitmq_clusters-loadbalacer.yaml
+.PHONY: rabbitmq-%-public-rm
+rabbitmq-%-public-rm: | kubeconfig ## Remove RabbitMQ cluster public IP
+	kubectl delete --filename yaml/rabbitmq-$(*)-public.yaml
+clean:: rabbitmq-bugs-public-rm
+clean:: rabbitmq-bunny-public-rm
 
+.PHONY: rabbitmq-%-rm
+rabbitmq-%-rm: | kubeconfig ## Delete a RabbitMQ cluster
+	echo "TODO: delete self-signed cert"
+	$(KUBECTL) delete --filename yaml/rabbitmq-$(*).yaml
+clean:: rabbitmq-bugs-rm
+clean:: rabbitmq-bunny-rm
 
+.PHONY: rabbitmq-%-ingress
+rabbitmq-%-ingress: | kubeconfig ## Deploy HTTPS and AMQPS Traefik ingress
+	echo "TODO: split ingress into HTTP & TCP"
+	$(KUBECTL) apply --filename yaml/rabbitmq-$(*)-traefik-ingress.yaml
+all:: rabbitmq-bugs-ingress
+all:: rabbitmq-bunny-ingress
 
+.PHONY: rabbitmq-%-ingress-rm
+rabbitmq-%-ingress-rm: | kubeconfig ## Deploy HTTPS and AMQPS Traefik ingress
+	$(KUBECTL) delete --filename yaml/rabbitmq-$(*)-traefik-ingress.yaml
+clean:: rabbitmq-bugs-ingress-rm
+clean:: rabbitmq-bunny-ingress-rm

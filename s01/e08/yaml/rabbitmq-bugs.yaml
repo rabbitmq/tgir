@@ -1,0 +1,11 @@
+# TODO: define self-signed cert in a new file,
+# then reference in the tls spec below
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: rabbitmq-bugs
+spec:
+  replicas: 1
+  tls:
+    secretName: rabbitmq-tls-secrest
+    caSecretName: ca-secret

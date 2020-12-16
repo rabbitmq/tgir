@@ -152,7 +152,7 @@ releases-yq:
 	$(OPEN) $(YQ_RELEASES)
 
 HELM_RELEASES := https://github.com/helm/helm/releases
-HELM_VERSION := 3.4.0
+HELM_VERSION := 3.4.2
 HELM_BIN_DIR := helm-v$(HELM_VERSION)-$(platform)-amd64
 HELM_URL := https://get.helm.sh/$(HELM_BIN_DIR).tar.gz
 HELM := $(LOCAL_BIN)/$(HELM_BIN_DIR)/$(platform)-amd64/helm
