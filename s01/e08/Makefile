@@ -60,7 +60,7 @@ $(DOCTL_CONFIG): | $(DOCTL_CONFIG_DIR) $(DOCTL)
 	$(DOCTL_WITH_CONFIG) auth init
 
 .PHONY: all
-all:: ## Setup everything
+all:: ## Setup all resources
 
 .PHONY: clean
 clean:: ## Remove all installed resources
