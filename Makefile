@@ -82,7 +82,7 @@ endif
 bat: $(BAT)
 
 K9S_RELEASES := https://github.com/derailed/k9s/releases
-K9S_VERSION := 0.22.1
+K9S_VERSION := 0.24.2
 K9S_BIN_DIR := k9s-$(K9S_VERSION)-$(platform)-x86_64
 K9S_URL := $(K9S_RELEASES)/download/v$(K9S_VERSION)/k9s_$(PLATFORM)_x86_64.tar.gz
 K9S := $(LOCAL_BIN)/$(K9S_BIN_DIR)/k9s
