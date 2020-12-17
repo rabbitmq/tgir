@@ -13,7 +13,7 @@ We have at our disposal a wide variety of tooling for the Kubernetes infrastruct
 ## LINKS
 * [Chaos Mesh](https://chaos-mesh.org/) - Chaos testing framework for Kubernetes clusters by the CNCF
 * [RabbitMQ Cluster Kubernetes Operator](https://github.com/rabbitmq/cluster-operator) - to easily spin up RabbitMQ Clusters in Kubernetes
-* [TGIR S01E09](https://www.youtube.com/watch?v=NWISW6AwpOE) - Setting up the monitoring framework used in this episode
+* [TGIR S01E07](https://www.youtube.com/watch?v=NWISW6AwpOE) - Setting up the monitoring framework used in this episode
 * [Cloudflare blog about their partial network partitions](https://blog.cloudflare.com/a-byzantine-failure-in-the-real-world/)
 
 
