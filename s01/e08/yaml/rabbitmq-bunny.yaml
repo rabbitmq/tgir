@@ -7,5 +7,5 @@ metadata:
 spec:
   replicas: 1
   tls:
-    secretName: rabbitmq-tls-secrest
-    caSecretName: ca-secret
+    secretName: rabbitmq-bunny-tls
+    caSecretName: rabbitmq-bunny-tls

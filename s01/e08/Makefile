@@ -17,6 +17,8 @@ KUBECONFIG_DIR := $(XDG_CONFIG_HOME)/kubectl
 KUBECONFIG := $(KUBECONFIG_DIR)/config
 export KUBECONFIG
 
+OPENSSL := openssl
+
 $(KUBECONFIG_DIR):
 	@mkdir -p $(@)
 
@@ -141,16 +143,24 @@ cluster-operator-rm:
 	$(KUBECTL) delete --filename $(CLUSTER_OPERATOR_MANIFEST)
 clean:: cluster-operator-rm
 
+.PHONY: rabbitmq-%-rm
+rabbitmq-%-rm: | kubeconfig ## Delete a RabbitMQ cluster
+	$(KUBECTL) delete --filename yaml/rabbitmq-$(*).yaml
+	$(KUBECTL) delete --filename yaml/rabbitmq-$(*)-ca.yaml
+	$(KUBECTL) delete  secret rabbitmq-$(*)-ca
+clean:: rabbitmq-bugs-rm
+clean:: rabbitmq-bunny-rm
+
 .PHONY: rabbitmq-%
 rabbitmq-%: | kubeconfig ## Deploy a RabbitMQ cluster
-	echo "TODO: create self-signed cert"
+	rm -rf certs && mkdir certs
+	$(OPENSSL) genrsa -out certs/rabbitmq-$(*)-ca-key.pem 2048
+	$(OPENSSL) req -x509 -new -nodes -key certs/rabbitmq-$(*)-ca-key.pem -subj "/CN=rabbitmq-$(*)" -days 3650 -reqexts v3_req -extensions v3_ca -out certs/rabbitmq-$(*)-ca.pem
+	$(KUBECTL) create secret tls rabbitmq-$(*)-ca --cert=certs/rabbitmq-$(*)-ca.pem --key=certs/rabbitmq-$(*)-ca-key.pem  
+	$(KUBECTL) apply --filename yaml/rabbitmq-$(*)-ca.yaml
 	$(KUBECTL) apply --filename yaml/rabbitmq-$(*).yaml
 all:: rabbitmq-bugs
 all:: rabbitmq-bunny
-
-.PHONY: rabbitmq-%-public
-rabbitmq-%-public: | kubeconfig ## Expose RabbitMQ cluster via a public IP
-	kubectl apply --filename yaml/rabbitmq-$(*)-public.yaml
 
 .PHONY: rabbitmq-%-public-rm
 rabbitmq-%-public-rm: | kubeconfig ## Remove RabbitMQ cluster public IP
@@ -158,22 +168,23 @@ rabbitmq-%-public-rm: | kubeconfig ## Remove RabbitMQ cluster public IP
 clean:: rabbitmq-bugs-public-rm
 clean:: rabbitmq-bunny-public-rm
 
-.PHONY: rabbitmq-%-rm
-rabbitmq-%-rm: | kubeconfig ## Delete a RabbitMQ cluster
-	echo "TODO: delete self-signed cert"
-	$(KUBECTL) delete --filename yaml/rabbitmq-$(*).yaml
-clean:: rabbitmq-bugs-rm
-clean:: rabbitmq-bunny-rm
+.PHONY: rabbitmq-%-public
+rabbitmq-%-public: | kubeconfig ## Expose RabbitMQ cluster via a public IP
+	kubectl apply --filename yaml/rabbitmq-$(*)-public.yaml
 
-.PHONY: rabbitmq-%-ingress
-rabbitmq-%-ingress: | kubeconfig ## Deploy HTTPS and AMQPS Traefik ingress
-	echo "TODO: split ingress into HTTP & TCP"
-	$(KUBECTL) apply --filename yaml/rabbitmq-$(*)-traefik-ingress.yaml
-all:: rabbitmq-bugs-ingress
-all:: rabbitmq-bunny-ingress
 
-.PHONY: rabbitmq-%-ingress-rm
-rabbitmq-%-ingress-rm: | kubeconfig ## Deploy HTTPS and AMQPS Traefik ingress
-	$(KUBECTL) delete --filename yaml/rabbitmq-$(*)-traefik-ingress.yaml
-clean:: rabbitmq-bugs-ingress-rm
-clean:: rabbitmq-bunny-ingress-rm
+.PHONY: traefik-%-ingress-rm
+traefik-%-ingress-rm: | kubeconfig ## Deploy HTTPS and AMQPS Traefik ingress
+	$(KUBECTL) delete --filename yaml/rabbitmq-$(*)-traefik-ingress-amqps.yaml
+	$(KUBECTL) delete --filename yaml/rabbitmq-$(*)-traefik-ingress-https.yaml
+clean:: traefik-bugs-ingress-rm
+clean:: traefik-bunny-ingress-rm
+
+
+.PHONY: traefik-%-ingress
+traefik-%-ingress: | kubeconfig ## Deploy HTTPS and AMQPS Traefik ingress
+	$(KUBECTL) apply --filename yaml/rabbitmq-$(*)-traefik-ingress-amqps.yaml
+	$(KUBECTL) apply --filename yaml/rabbitmq-$(*)-traefik-ingress-https.yaml
+all:: traefik-bugs-ingress
+all:: traefik-bunny-ingress
+

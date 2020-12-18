@@ -166,6 +166,7 @@ logs:
 globalArguments:
   - "--global.checknewversion"
   - "--global.sendanonymoususage"
+  - "--serversTransport.insecureSkipVerify=true"
 
 #
 # Configure Traefik static configuration
@@ -262,7 +263,7 @@ ports:
     tls:
       enabled: true
   #     options: ""
-      certResolver: "myresolver"
+    #  certResolver: "myresolver"
   websecure:
     port: 8443
     # hostPort: 8443

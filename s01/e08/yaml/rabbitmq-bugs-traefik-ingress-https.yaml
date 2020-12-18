@@ -1,0 +1,16 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: ingress-bugs-tls
+spec:
+  entryPoints:
+    - http-mgm-tls
+  routes:
+  - match: Host(`tgir-s01e08-bugs.rabbitmq.com`)
+    kind: Rule
+    services:
+      - name: rabbitmq-bugs
+        scheme: https
+        port: 15671
+  tls:
+    secretName:  rabbitmq-bugs-tls
