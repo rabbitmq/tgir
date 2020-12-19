@@ -1,0 +1,36 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: rabbitmq-bugs-ca
+spec:
+  ca:
+    secretName: rabbitmq-bugs-ca
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: rabbitmq-bugs-cert
+spec:
+  secretName: rabbitmq-bugs-tls
+  duration: 2160h # 90d
+  renewBefore: 360h # 15d
+  subject:
+    organizations:
+    - RabbitMQ
+  commonName: rabbitmq-bugs-tls
+  isCA: false
+  privateKey:
+    algorithm: RSA
+    encoding: PKCS1
+    size: 2048
+  usages:
+    - server auth
+    - client auth
+  dnsNames:
+  - "*"
+  - "*.default"
+  - tgir-s01e08-bugs.rabbitmq.com
+  issuerRef:
+    name: rabbitmq-bugs-ca
+    kind: Issuer
+    group: cert-manager.io
