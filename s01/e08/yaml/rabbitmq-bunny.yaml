@@ -1,5 +1,3 @@
-# TODO: define self-signed cert in a new file,
-# then reference in the tls spec below
 apiVersion: rabbitmq.com/v1beta1
 kind: RabbitmqCluster
 metadata:
@@ -8,4 +6,3 @@ spec:
   replicas: 1
   tls:
     secretName: rabbitmq-bunny-tls
-    caSecretName: rabbitmq-bunny-tls

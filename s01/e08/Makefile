@@ -17,8 +17,6 @@ KUBECONFIG_DIR := $(XDG_CONFIG_HOME)/kubectl
 KUBECONFIG := $(KUBECONFIG_DIR)/config
 export KUBECONFIG
 
-OPENSSL := openssl
-
 $(KUBECONFIG_DIR):
 	@mkdir -p $(@)
 
@@ -109,12 +107,14 @@ TRAEFIK_VERSION ?= 9.11.0
 .PHONY: traefik
 traefik: | $(HELM) $(KUBECONFIG) ## Deploy Traefik
 	$(HELM) repo add traefik https://helm.traefik.io/traefik
-	$(HELM) install traefik traefik/traefik \
+	$(HELM) upgrade traefik traefik/traefik \
+	  --install \
 	  --version $(TRAEFIK_VERSION) \
 	  --values yaml/values.yaml
 all:: traefik
 
-traefik-rm: | $(HELM) $(KUBECONFIG) ## Remove Traefik
+.PHONY: traefik-rm
+traefik-rm: | $(HELM) kubeconfig ## Remove Traefik
 	$(HELM) uninstall traefik \
 	; true
 clean:: traefik-rm
@@ -122,14 +122,59 @@ clean:: traefik-rm
 # https://github.com/jetstack/cert-manager/releases
 CERT_MANAGER_VERSION ?= 1.1.0
 CERT_MANAGER_MANIFEST = https://github.com/jetstack/cert-manager/releases/download/v$(CERT_MANAGER_VERSION)/cert-manager.yaml
+CERT_MANAGER_NAMESPACE = cert-manager
 .PHONY: cert-manager
 cert-manager: | kubeconfig
-	$(KUBECTL) apply --filename $(CERT_MANAGER_MANIFEST)
+	$(KUBECTL) apply \
+	  --namespace $(CERT_MANAGER_NAMESPACE) \
+	  --filename $(CERT_MANAGER_MANIFEST)
 all:: cert-manager
 
-cert-manager-rm:
-	$(KUBECTL) delete --filename $(CERT_MANAGER_MANIFEST)
+.PHONY: cert-manager-rm
+cert-manager-rm: | kubeconfig
+	$(KUBECTL) delete \
+	  --namespace $(CERT_MANAGER_NAMESPACE) \
+	  --filename $(CERT_MANAGER_MANIFEST)
 clean:: cert-manager-rm
+
+.PHONY: cert-manager-cloudflare-issuer
+cert-manager-cloudflare-issuer: | cloudflare-secret kubeconfig
+	$(KUBECTL) apply \
+	  --filename yaml/cert-manager-cloudflare-issuer.yaml
+all:: cert-manager-cloudflare-issuer
+
+.PHONY: cert-manager-cloudflare-issuer-rm
+cert-manager-cloudflare-issuer-rm: | cloudflare-secret-rm kubeconfig
+	$(KUBECTL) delete \
+	  --filename yaml/cert-manager-cloudflare-issuer.yaml \
+	  --ignore-not-found
+	$(KUBECTL) delete \
+	    secret/letsencrypt-issuer-account-key \
+	    --namespace $(CERT_MANAGER_NAMESPACE) \
+	    --ignore-not-found
+clean:: cert-manager-cloudflare-issuer-rm
+
+CLOUDFLARE_GLOBAL_API_KEY_PATH = tmp/tgir-s01e08-cert-manager-cloudflare-global-api-key
+.PHONY: cloudflare-secret
+cloudflare-secret: | kubeconfig
+ifeq ($(wildcard $(CLOUDFLARE_GLOBAL_API_KEY_PATH)),)
+	@printf "Create a new Clouflare Global API key for cert-manager $(BOLD)https://dash.cloudflare.com/profile/api-tokens$(NORMAL)\n"
+	@printf "And then write it to $(BOLD)$(CLOUDFLARE_GLOBAL_API_KEY_PATH)$(NORMAL)\n"
+	@exit 1
+endif
+	@$(KUBECTL) --dry-run=client --output=yaml \
+	  create secret generic cloudflare \
+	  --from-literal=global_api_key="$$(cat $(CLOUDFLARE_GLOBAL_API_KEY_PATH))" \
+	| $(KUBECTL) apply \
+	    --namespace $(CERT_MANAGER_NAMESPACE) \
+	    --filename -
+
+.PHONY: cloudflare-secret-rm
+cloudflare-secret-rm: | kubeconfig
+	$(KUBECTL) delete \
+	  secret/cloudflare \
+	  --namespace $(CERT_MANAGER_NAMESPACE) \
+	  --ignore-not-found
 
 # https://github.com/rabbitmq/cluster-operator/releases
 CLUSTER_OPERATOR_VERSION ?= 1.2.0
@@ -139,25 +184,22 @@ cluster-operator: | kubeconfig
 	$(KUBECTL) apply --filename $(CLUSTER_OPERATOR_MANIFEST)
 all:: cluster-operator
 
+.PHONY: cluster-operator-rm
 cluster-operator-rm:
 	$(KUBECTL) delete --filename $(CLUSTER_OPERATOR_MANIFEST)
 clean:: cluster-operator-rm
 
 .PHONY: rabbitmq-%-rm
 rabbitmq-%-rm: | kubeconfig ## Delete a RabbitMQ cluster
-	$(KUBECTL) delete --filename yaml/rabbitmq-$(*).yaml
-	$(KUBECTL) delete --filename yaml/rabbitmq-$(*)-ca.yaml
-	$(KUBECTL) delete  secret rabbitmq-$(*)-ca
+	$(KUBECTL) delete --filename yaml/rabbitmq-$(*).yaml --ignore-not-found
+	$(KUBECTL) delete --filename yaml/rabbitmq-$(*)-cert.yaml --ignore-not-found
+	$(KUBECTL) delete secret/rabbitmq-$(*)-tls --ignore-not-found
 clean:: rabbitmq-bugs-rm
 clean:: rabbitmq-bunny-rm
 
 .PHONY: rabbitmq-%
 rabbitmq-%: | kubeconfig ## Deploy a RabbitMQ cluster
-	rm -rf certs && mkdir certs
-	$(OPENSSL) genrsa -out certs/rabbitmq-$(*)-ca-key.pem 2048
-	$(OPENSSL) req -x509 -new -nodes -key certs/rabbitmq-$(*)-ca-key.pem -subj "/CN=rabbitmq-$(*)" -days 3650 -reqexts v3_req -extensions v3_ca -out certs/rabbitmq-$(*)-ca.pem
-	$(KUBECTL) create secret tls rabbitmq-$(*)-ca --cert=certs/rabbitmq-$(*)-ca.pem --key=certs/rabbitmq-$(*)-ca-key.pem  
-	$(KUBECTL) apply --filename yaml/rabbitmq-$(*)-ca.yaml
+	$(KUBECTL) apply --filename yaml/rabbitmq-$(*)-cert.yaml
 	$(KUBECTL) apply --filename yaml/rabbitmq-$(*).yaml
 all:: rabbitmq-bugs
 all:: rabbitmq-bunny
@@ -172,7 +214,6 @@ clean:: rabbitmq-bunny-public-rm
 rabbitmq-%-public: | kubeconfig ## Expose RabbitMQ cluster via a public IP
 	kubectl apply --filename yaml/rabbitmq-$(*)-public.yaml
 
-
 .PHONY: traefik-%-ingress-rm
 traefik-%-ingress-rm: | kubeconfig ## Deploy HTTPS and AMQPS Traefik ingress
 	$(KUBECTL) delete --filename yaml/rabbitmq-$(*)-traefik-ingress-amqps.yaml
@@ -180,11 +221,9 @@ traefik-%-ingress-rm: | kubeconfig ## Deploy HTTPS and AMQPS Traefik ingress
 clean:: traefik-bugs-ingress-rm
 clean:: traefik-bunny-ingress-rm
 
-
 .PHONY: traefik-%-ingress
 traefik-%-ingress: | kubeconfig ## Deploy HTTPS and AMQPS Traefik ingress
 	$(KUBECTL) apply --filename yaml/rabbitmq-$(*)-traefik-ingress-amqps.yaml
 	$(KUBECTL) apply --filename yaml/rabbitmq-$(*)-traefik-ingress-https.yaml
 all:: traefik-bugs-ingress
 all:: traefik-bunny-ingress
-

@@ -13,4 +13,4 @@ spec:
         scheme: https
         port: 15671
   tls:
-    secretName:  rabbitmq-bunny-tls
+    secretName: rabbitmq-bunny-tls
