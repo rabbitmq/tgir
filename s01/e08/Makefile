@@ -155,6 +155,7 @@ cert-manager-cloudflare-issuer-rm: | cloudflare-secret-rm kubeconfig
 clean:: cert-manager-cloudflare-issuer-rm
 
 CLOUDFLARE_GLOBAL_API_KEY_PATH = tmp/tgir-s01e08-cert-manager-cloudflare-global-api-key
+CLOUDFLARE_GLOBAL_API_KEY = "$$(cat $(CLOUDFLARE_GLOBAL_API_KEY_PATH))"
 .PHONY: cloudflare-secret
 cloudflare-secret: | kubeconfig
 ifeq ($(wildcard $(CLOUDFLARE_GLOBAL_API_KEY_PATH)),)
@@ -162,12 +163,15 @@ ifeq ($(wildcard $(CLOUDFLARE_GLOBAL_API_KEY_PATH)),)
 	@printf "And then write it to $(BOLD)$(CLOUDFLARE_GLOBAL_API_KEY_PATH)$(NORMAL)\n"
 	@exit 1
 endif
-	@$(KUBECTL) --dry-run=client --output=yaml \
-	  create secret generic cloudflare \
-	  --from-literal=global_api_key="$$(cat $(CLOUDFLARE_GLOBAL_API_KEY_PATH))" \
-	| $(KUBECTL) apply \
-	    --namespace $(CERT_MANAGER_NAMESPACE) \
-	    --filename -
+	@$(KUBECTL) get secret cloudflare --namespace $(CERT_MANAGER_NAMESPACE) \
+	|| ( \
+	    $(KUBECTL) --dry-run=client --output=yaml \
+	      create secret generic cloudflare \
+	      --from-literal=global_api_key=$(CLOUDFLARE_GLOBAL_API_KEY) \
+	    | $(KUBECTL) apply \
+		--namespace $(CERT_MANAGER_NAMESPACE) \
+		--filename - \
+	  )
 
 .PHONY: cloudflare-secret-rm
 cloudflare-secret-rm: | kubeconfig
