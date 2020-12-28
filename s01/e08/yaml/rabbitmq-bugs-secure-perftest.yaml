@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq-bugs-perf-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq-bugs-perf-test
+  template:
+    metadata:
+      labels:
+        app: rabbitmq-bugs-perf-test
+      annotations:
+        prometheus.io/port: "8080"
+        prometheus.io/scrape: "true"
+    spec:
+      containers:
+      - name: perftest
+        # https://hub.docker.com/r/pivotalrabbitmq/perf-test/tags
+        # SNI support was added in 2.13.0: https://github.com/rabbitmq/rabbitmq-perf-test/pull/253
+        image: pivotalrabbitmq/perf-test:2.13.0
+        resources:
+          limits:
+            cpu: 0.5
+            memory: 128Mi
+          requests:
+            cpu: 0.5
+            memory: 128Mi
+        command:
+          - /bin/bash
+          - -c
+        args:
+          - |-
+            bin/runjava com.rabbitmq.perf.PerfTest \
+              --uri "amqps://$RABBITMQ_USER:$RABBITMQ_PASS@$RABBITMQ_PUBLIC_FQDN:5671/%2f" \
+              -sni $RABBITMQ_PUBLIC_FQDN
+        env:
+        - name: RABBITMQ_USER
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-bugs-default-user
+              key: username
+        - name: RABBITMQ_PASS
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-bugs-default-user
+              key: password
+
+        - name: RABBITMQ_PUBLIC_FQDN
+          value: "tgir-s01e08-bugs.rabbitmq.com"
+        - name: PRODUCERS
+          value: "1"
+        - name: VARIABLE_RATE
+          value: "1:30,10:30,2:30,0:60"
+        - name: CONFIRM
+          value: "1"
+        - name: JSON_BODY
+          value: "true"
+        - name: SIZE
+          value: "1000"
+        - name: FLAG
+          value: "persistent"
+        - name: ROUTING_KEY
+          value: "quorum"
+
+        - name: CONSUMERS
+          value: "2"
+        - name: CONSUMER_LATENCY
+          value: "50000"
+
+        - name: QUEUE_PATTERN
+          value: "quorum-%d"
+        - name: QUEUE_PATTERN_FROM
+          value: "1"
+        - name: QUEUE_PATTERN_TO
+          value: "1"
+        - name: QUEUE_ARGS
+          value: "x-max-length=1000,x-queue-type=quorum,x-max-in-memory-bytes=1000000"
+        - name: AUTO_DELETE
+          value: "false"
+
+        - name: METRICS_PROMETHEUS
+          value: "true"

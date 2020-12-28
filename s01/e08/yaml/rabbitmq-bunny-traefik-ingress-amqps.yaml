@@ -10,5 +10,6 @@ spec:
       services:
         - name: rabbitmq-bunny
           port: 5671
+  # TODO: why don't we see anything in Traefik logs when this is disabled?
   tls:
     passthrough: true

@@ -105,7 +105,7 @@ dke-versions: | $(DOCTL_CONFIG) ## Show all size options for DKE nodes
 # helm search repo --versions traefik/traefik
 TRAEFIK_VERSION ?= 9.11.0
 .PHONY: traefik
-traefik: | $(HELM) $(KUBECONFIG) ## Deploy Traefik
+traefik: | $(HELM) $(KUBECONFIG) ## 5. Install Traefik
 	$(HELM) repo add traefik https://helm.traefik.io/traefik
 	$(HELM) upgrade traefik traefik/traefik \
 	  --install \
@@ -124,7 +124,7 @@ CERT_MANAGER_VERSION ?= 1.1.0
 CERT_MANAGER_MANIFEST = https://github.com/jetstack/cert-manager/releases/download/v$(CERT_MANAGER_VERSION)/cert-manager.yaml
 CERT_MANAGER_NAMESPACE = cert-manager
 .PHONY: cert-manager
-cert-manager: | kubeconfig
+cert-manager: | kubeconfig ## 3. Deploy cert-manager for Let's Encrypt TLS certs
 	$(KUBECTL) apply \
 	  --filename $(CERT_MANAGER_MANIFEST)
 all:: cert-manager
@@ -132,17 +132,18 @@ all:: cert-manager
 .PHONY: cert-manager-rm
 cert-manager-rm: | kubeconfig
 	$(KUBECTL) delete \
-	  --filename $(CERT_MANAGER_MANIFEST)
+	  --filename $(CERT_MANAGER_MANIFEST) \
+	  --ignore-not-found
 clean:: cert-manager-rm
 
-.PHONY: cert-manager-cloudflare-issuer
-cert-manager-cloudflare-issuer: | cloudflare-secret kubeconfig
+.PHONY: cert-manager-cloudflare
+cert-manager-cloudflare: | cloudflare-secret kubeconfig ## 4. Enable rabbitmq.com TLS certs verification
 	$(KUBECTL) apply \
 	  --filename yaml/cert-manager-cloudflare-issuer.yaml
-all:: cert-manager-cloudflare-issuer
+all:: cert-manager-cloudflare
 
-.PHONY: cert-manager-cloudflare-issuer-rm
-cert-manager-cloudflare-issuer-rm: | cloudflare-secret-rm kubeconfig
+.PHONY: cert-manager-cloudflare-rm
+cert-manager-cloudflare-rm: | cloudflare-secret-rm kubeconfig
 	$(KUBECTL) delete \
 	  --filename yaml/cert-manager-cloudflare-issuer.yaml \
 	  --ignore-not-found
@@ -150,7 +151,7 @@ cert-manager-cloudflare-issuer-rm: | cloudflare-secret-rm kubeconfig
 	    secret/letsencrypt-issuer-account-key \
 	    --namespace $(CERT_MANAGER_NAMESPACE) \
 	    --ignore-not-found
-clean:: cert-manager-cloudflare-issuer-rm
+clean:: cert-manager-cloudflare-rm
 
 CLOUDFLARE_GLOBAL_API_KEY_PATH = tmp/tgir-s01e08-cert-manager-cloudflare-global-api-key
 CLOUDFLARE_GLOBAL_API_KEY = "$$(cat $(CLOUDFLARE_GLOBAL_API_KEY_PATH))"
@@ -179,53 +180,64 @@ cloudflare-secret-rm: | kubeconfig
 	  --ignore-not-found
 
 # https://github.com/rabbitmq/cluster-operator/releases
-CLUSTER_OPERATOR_VERSION ?= 1.2.0
+CLUSTER_OPERATOR_VERSION ?= 1.3.0
 CLUSTER_OPERATOR_MANIFEST = https://github.com/rabbitmq/cluster-operator/releases/download/v$(CLUSTER_OPERATOR_VERSION)/cluster-operator.yml
 .PHONY: cluster-operator
-cluster-operator: | kubeconfig
+cluster-operator: | kubeconfig ## 1. Install RabbitMQ Cluster Operator for easy & correct RabbitMQ clusters on K8S
 	$(KUBECTL) apply --filename $(CLUSTER_OPERATOR_MANIFEST)
 all:: cluster-operator
 
-.PHONY: cluster-operator-rm
-cluster-operator-rm:
-	$(KUBECTL) delete --filename $(CLUSTER_OPERATOR_MANIFEST)
-clean:: cluster-operator-rm
+.PHONY: rabbitmq-%-insecure-rm
+rabbitmq-%-insecure-rm: | kubeconfig ## Delete RabbitMQ cluster & public IP
+	kubectl delete --filename yaml/rabbitmq-$(*)-insecure.yaml --ignore-not-found
+clean:: rabbitmq-bugs-insecure-rm
+clean:: rabbitmq-bunny-insecure-rm
 
-.PHONY: rabbitmq-%-public-rm
-rabbitmq-%-public-rm: | kubeconfig ## Remove RabbitMQ cluster public IP
-	kubectl delete --filename yaml/rabbitmq-$(*)-public.yaml
-clean:: rabbitmq-bugs-public-rm
-clean:: rabbitmq-bunny-public-rm
+.PHONY: rabbitmq-%-insecure
+rabbitmq-%-insecure: | kubeconfig ## 2. Deploy RabbitMQ cluster with a public IP
+	kubectl apply --filename yaml/rabbitmq-$(*)-insecure.yaml
 
-.PHONY: rabbitmq-%-public
-rabbitmq-%-public: | kubeconfig ## Expose RabbitMQ cluster via a public IP
-	kubectl apply --filename yaml/rabbitmq-$(*)-public.yaml
-
-.PHONY: rabbitmq-%-rm
-rabbitmq-%-rm: | kubeconfig ## Delete a RabbitMQ cluster
-	$(KUBECTL) delete --filename yaml/rabbitmq-$(*).yaml --ignore-not-found
+.PHONY: rabbitmq-%-secure-rm
+rabbitmq-%-secure-rm: | kubeconfig ## Delete RabbitMQ cluster
+	$(KUBECTL) delete --filename yaml/rabbitmq-$(*)-secure.yaml --ignore-not-found
 	$(KUBECTL) delete --filename yaml/rabbitmq-$(*)-cert.yaml --ignore-not-found
 	$(KUBECTL) delete secret/rabbitmq-$(*)-tls --ignore-not-found
-clean:: rabbitmq-bugs-rm
-clean:: rabbitmq-bunny-rm
+clean:: rabbitmq-bugs-secure-rm
+clean:: rabbitmq-bunny-secure-rm
 
-.PHONY: rabbitmq-%
-rabbitmq-%: | kubeconfig ## Deploy a RabbitMQ cluster
+.PHONY: cluster-operator-rm
+cluster-operator-rm:
+	$(KUBECTL) delete --filename $(CLUSTER_OPERATOR_MANIFEST) --ignore-not-found
+clean:: cluster-operator-rm
+
+.PHONY: rabbitmq-%-secure-perftest-rm
+rabbitmq-%-secure-perftest-rm: | kubeconfig ## Delete PerfTest that runs against RabbitMQ cluster secure public IP
+	kubectl delete --filename yaml/rabbitmq-$(*)-secure-perftest.yaml --ignore-not-found
+clean:: rabbitmq-bugs-secure-perftest-rm
+clean:: rabbitmq-bunny-secure-perftest-rm
+
+.PHONY: rabbitmq-%-secure-perftest
+rabbitmq-%-secure-perftest: | kubeconfig ## 8. Run PerfTest against RabbitMQ cluster secure public IP
+	kubectl apply --filename yaml/rabbitmq-$(*)-secure-perftest.yaml
+all:: rabbitmq-bugs-secure-perftest
+all:: rabbitmq-bunny-secure-perftest
+
+.PHONY: rabbitmq-%-secure
+rabbitmq-%-secure: | kubeconfig ## 6. Deploy a RabbitMQ cluster with secure public IP
 	$(KUBECTL) apply --filename yaml/rabbitmq-$(*)-cert.yaml
-	$(KUBECTL) apply --filename yaml/rabbitmq-$(*).yaml
-all:: rabbitmq-bugs
-all:: rabbitmq-bunny
-
+	$(KUBECTL) apply --filename yaml/rabbitmq-$(*)-secure.yaml
+all:: rabbitmq-bugs-secure
+all:: rabbitmq-bunny-secure
 
 .PHONY: traefik-%-ingress-rm
 traefik-%-ingress-rm: | kubeconfig ## Deploy HTTPS and AMQPS Traefik ingress
-	$(KUBECTL) delete --filename yaml/rabbitmq-$(*)-traefik-ingress-amqps.yaml
-	$(KUBECTL) delete --filename yaml/rabbitmq-$(*)-traefik-ingress-https.yaml
+	$(KUBECTL) delete --filename yaml/rabbitmq-$(*)-traefik-ingress-amqps.yaml --ignore-not-found
+	$(KUBECTL) delete --filename yaml/rabbitmq-$(*)-traefik-ingress-https.yaml --ignore-not-found
 clean:: traefik-bugs-ingress-rm
 clean:: traefik-bunny-ingress-rm
 
 .PHONY: traefik-%-ingress
-traefik-%-ingress: | kubeconfig ## Deploy HTTPS and AMQPS Traefik ingress
+traefik-%-ingress: | kubeconfig ## 7. Deploy HTTPS and AMQPS Traefik ingress
 	$(KUBECTL) apply --filename yaml/rabbitmq-$(*)-traefik-ingress-amqps.yaml
 	$(KUBECTL) apply --filename yaml/rabbitmq-$(*)-traefik-ingress-https.yaml
 all:: traefik-bugs-ingress

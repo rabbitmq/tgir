@@ -1,8 +1,8 @@
 apiVersion: rabbitmq.com/v1beta1
 kind: RabbitmqCluster
 metadata:
-  name: rabbitmq-bugs
+  name: rabbitmq-bunny
 spec:
   replicas: 1
   service:
-    type:  LoadBalancer
+    type: LoadBalancer

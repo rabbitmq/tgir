@@ -14,4 +14,3 @@ echo ""
 read -p "Ready to execute the test to rabbitmq-$1, press enter to start"
 
 docker run -it  pivotalrabbitmq/perf-test:2.13.0 -h ${CONNECTION} -sni  tgir-s01e08-$1.rabbitmq.com
-
