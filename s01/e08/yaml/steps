@@ -27,5 +27,16 @@
 * GS: Perf-test with for bugs, bunny and a wrong sni.
 
 
+ 1 - traefik
+ 2 - cert-manager
+ 3 - make cert-manager-cloudflare-issuer
+ 4 - make cluster-operator
+ 5 - make rabbitmq-bunny
+ 6 - make traefik-bunny-ingress
+ 
+
+
+
+
 
 

@@ -126,14 +126,12 @@ CERT_MANAGER_NAMESPACE = cert-manager
 .PHONY: cert-manager
 cert-manager: | kubeconfig
 	$(KUBECTL) apply \
-	  --namespace $(CERT_MANAGER_NAMESPACE) \
 	  --filename $(CERT_MANAGER_MANIFEST)
 all:: cert-manager
 
 .PHONY: cert-manager-rm
 cert-manager-rm: | kubeconfig
 	$(KUBECTL) delete \
-	  --namespace $(CERT_MANAGER_NAMESPACE) \
 	  --filename $(CERT_MANAGER_MANIFEST)
 clean:: cert-manager-rm
 
