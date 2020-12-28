@@ -189,6 +189,16 @@ cluster-operator-rm:
 	$(KUBECTL) delete --filename $(CLUSTER_OPERATOR_MANIFEST)
 clean:: cluster-operator-rm
 
+.PHONY: rabbitmq-%-public-rm
+rabbitmq-%-public-rm: | kubeconfig ## Remove RabbitMQ cluster public IP
+	kubectl delete --filename yaml/rabbitmq-$(*)-public.yaml
+clean:: rabbitmq-bugs-public-rm
+clean:: rabbitmq-bunny-public-rm
+
+.PHONY: rabbitmq-%-public
+rabbitmq-%-public: | kubeconfig ## Expose RabbitMQ cluster via a public IP
+	kubectl apply --filename yaml/rabbitmq-$(*)-public.yaml
+
 .PHONY: rabbitmq-%-rm
 rabbitmq-%-rm: | kubeconfig ## Delete a RabbitMQ cluster
 	$(KUBECTL) delete --filename yaml/rabbitmq-$(*).yaml --ignore-not-found
@@ -204,15 +214,6 @@ rabbitmq-%: | kubeconfig ## Deploy a RabbitMQ cluster
 all:: rabbitmq-bugs
 all:: rabbitmq-bunny
 
-.PHONY: rabbitmq-%-public-rm
-rabbitmq-%-public-rm: | kubeconfig ## Remove RabbitMQ cluster public IP
-	kubectl delete --filename yaml/rabbitmq-$(*)-public.yaml
-clean:: rabbitmq-bugs-public-rm
-clean:: rabbitmq-bunny-public-rm
-
-.PHONY: rabbitmq-%-public
-rabbitmq-%-public: | kubeconfig ## Expose RabbitMQ cluster via a public IP
-	kubectl apply --filename yaml/rabbitmq-$(*)-public.yaml
 
 .PHONY: traefik-%-ingress-rm
 traefik-%-ingress-rm: | kubeconfig ## Deploy HTTPS and AMQPS Traefik ingress

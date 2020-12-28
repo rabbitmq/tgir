@@ -6,3 +6,4 @@ spec:
   replicas: 1
   tls:
     secretName: rabbitmq-bugs-tls
+    disableNonTLSListeners: true

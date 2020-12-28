@@ -166,7 +166,7 @@ logs:
 globalArguments:
   - "--global.checknewversion"
   - "--global.sendanonymoususage"
-  - "--serversTransport.insecureSkipVerify=true"
+  - "--serversTransport.insecureSkipVerify=true" #SHOW
 
 #
 # Configure Traefik static configuration
@@ -248,15 +248,15 @@ ports:
     expose: true
     exposedPort: 15672
     protocol: TCP
-    redirectTo: http-mgm-tls
-  http-mgm-tls:
+    redirectTo: http-mgm-tls #SHOW
+  http-mgm-tls: #SHOW
     port: 15671
     expose: true
-    exposedPort: 443
+    exposedPort: 15671
     protocol: TCP
     tls:
       enabled: true
-  amqps:
+  amqps: #SHOW
     port: 5671
     expose: true
     exposedPort: 5671
@@ -265,23 +265,24 @@ ports:
       enabled: true
   #     options: ""
     #  certResolver: "myresolver"
-  # websecure:
-  #   port: 8443
-  #   # hostPort: 8443
-  #   expose: true
-  #   exposedPort: 443
-  #   # The port protocol (TCP/UDP)
-  #   protocol: TCP
-  #   # nodePort: 32443
-  #   # Set TLS at the entrypoint
-  #   # https://doc.traefik.io/traefik/routing/entrypoints/#tls
-  #   tls:
-  #     enabled: true
-  #     # this is the name of a TLSOption definition
-  #     options:
-  #       passthrough: true
-  #   #  certResolver: ""
-  #     domains: []
+  websecure:
+    port: 8443
+    # hostPort: 8443
+    expose: true
+    exposedPort: 443
+    # The port protocol (TCP/UDP)
+    protocol: TCP
+    redirectTo: http-mgm-tls #SHOW
+    # nodePort: 32443
+    # Set TLS at the entrypoint
+    # https://doc.traefik.io/traefik/routing/entrypoints/#tls
+    tls:
+      enabled: true
+      # this is the name of a TLSOption definition
+    #   options:
+    #     passthrough: true
+    # #  certResolver: ""
+    #   domains: []
 
 # TLS Options are created as TLSOption CRDs
 # https://doc.traefik.io/traefik/https/tls/#tls-options
