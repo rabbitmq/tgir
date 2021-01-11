@@ -1,0 +1,5 @@
+.config
+.envrc
+bin
+tmp
+.DS_Store

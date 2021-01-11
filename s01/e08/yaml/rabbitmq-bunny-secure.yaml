@@ -1,0 +1,10 @@
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: rabbitmq-bunny
+spec:
+  replicas: 1
+  tls:
+    secretName: rabbitmq-bunny-tls
+    disableNonTLSListeners: true
+

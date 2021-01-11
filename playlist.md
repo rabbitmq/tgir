@@ -9,3 +9,4 @@
 - [S01E05: I want to run RabbitMQ on K8S - Where do I start? May, 2020](s01/e05/README.md)
 - [S01E06: How to run a reliable RabbitMQ on K8S? September, 2020](s01/e06/README.md)
 - [S01E07: How to monitor RabbitMQ? October, 2020](s01/e07/README.md)
+- [S01E08: Secure public RabbitMQ clusters - November, 2020](s01/e08/README.md)

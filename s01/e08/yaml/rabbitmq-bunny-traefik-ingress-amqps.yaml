@@ -1,0 +1,15 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: rabbitmq-bunny-ingress
+spec:
+  entryPoints:
+    - amqps
+  routes:
+    - match: HostSNI(`tgir-s01e08-bunny.rabbitmq.com`)
+      services:
+        - name: rabbitmq-bunny
+          port: 5671
+  # TODO: why don't we see anything in Traefik logs when this is disabled?
+  tls:
+    passthrough: true

@@ -82,7 +82,7 @@ endif
 bat: $(BAT)
 
 K9S_RELEASES := https://github.com/derailed/k9s/releases
-K9S_VERSION := 0.22.1
+K9S_VERSION := 0.24.2
 K9S_BIN_DIR := k9s-$(K9S_VERSION)-$(platform)-x86_64
 K9S_URL := $(K9S_RELEASES)/download/v$(K9S_VERSION)/k9s_$(PLATFORM)_x86_64.tar.gz
 K9S := $(LOCAL_BIN)/$(K9S_BIN_DIR)/k9s
@@ -100,10 +100,10 @@ releases-k9s:
 
 KUBECTL_RELEASES := https://github.com/kubernetes/kubernetes/releases
 # K8S v1.18 is considered stable in October 2020, using latest version available
-KUBECTL_VERSION := 1.18.10
-KUBECTL_BIN := kubectl-$(KUBECTL_VERSION)-$(platform)-amd64
-KUBECTL_URL := https://storage.googleapis.com/kubernetes-release/release/v$(KUBECTL_VERSION)/bin/$(platform)/amd64/kubectl
-KUBECTL := $(LOCAL_BIN)/$(KUBECTL_BIN)
+KUBECTL_VERSION ?= 1.18.10
+KUBECTL_BIN = kubectl-$(KUBECTL_VERSION)-$(platform)-amd64
+KUBECTL_URL = https://storage.googleapis.com/kubernetes-release/release/v$(KUBECTL_VERSION)/bin/$(platform)/amd64/kubectl
+KUBECTL = $(LOCAL_BIN)/$(KUBECTL_BIN)
 $(KUBECTL): | $(CURL) $(LOCAL_BIN)
 	$(CURL) --progress-bar --fail --location --output $(KUBECTL) "$(KUBECTL_URL)"
 	touch $(KUBECTL)
@@ -152,7 +152,7 @@ releases-yq:
 	$(OPEN) $(YQ_RELEASES)
 
 HELM_RELEASES := https://github.com/helm/helm/releases
-HELM_VERSION := 3.4.0
+HELM_VERSION := 3.4.2
 HELM_BIN_DIR := helm-v$(HELM_VERSION)-$(platform)-amd64
 HELM_URL := https://get.helm.sh/$(HELM_BIN_DIR).tar.gz
 HELM := $(LOCAL_BIN)/$(HELM_BIN_DIR)/$(platform)-amd64/helm
@@ -178,7 +178,7 @@ releases-helm:
 
 .PHONY: help
 help:
-	@awk -F':+ |##' '/^[^\.][0-9a-zA-Z\._\-%]+:+.+##.+$$/ { printf "\033[36m%-28s\033[0m %s\n", $$1, $$3 }' $(MAKEFILE_LIST) \
+	@awk -F':+ |##' '/^[^\.][0-9a-zA-Z\._\-%]+:+.+##.+$$/ { printf "\033[36m%-30s\033[0m %s\n", $$1, $$3 }' $(MAKEFILE_LIST) \
 	| sort
 
 define MAKE_TARGETS

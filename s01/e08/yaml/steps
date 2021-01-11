@@ -1,0 +1,42 @@
+* GL: Introduce the TGIR
+
+* GS: Start with sildes, what are the problems we need to solve?
+	  Expose RabbitMQ using kubernetes.
+	  We have different ways to do that.
+	  Let's start with the simplest way, k8s Operator using load-balancer option.
+	  We reached the aim, but... 	
+* GS: We are not happy, too many IP adress, clients are connected directly to 
+      the server. If you need to create another cluster and move the connections you need to change the IP, or if you want to implement a canary update it is not possible or hard to do. It is not a best prectise in k8s.
+* GS: Back to the slides and show the next steps.      
+* GS: We need an ingress, what is an Ingress?  (Link)
+	  Speak about traefik.
+	  We need it in TLS mode ( traefik).
+	  Ok so we need a certificate
+
+* GL: Create the certificate using let's encrypt
+
+* GS: Deploy traefik, show the end points configuration in values.
+	  How to configure the end points.
+* GS: Deploy bugs and bunny, in this case we don't use use the load-balancer
+      option. Show the TLS configuration and the option disableNonTLSListeners.
+
+* GS: Deploy bugs and bunny ingress, explain the SNI Match.
+	  Relation between ingress and endpoints.
+	  
+	  
+* GS: Perf-test with for bugs, bunny and a wrong sni.
+
+
+ 1 - traefik
+ 2 - cert-manager
+ 3 - make cert-manager-cloudflare-issuer
+ 4 - make cluster-operator
+ 5 - make rabbitmq-bunny
+ 6 - make traefik-bunny-ingress
+ 
+
+
+
+
+
+
