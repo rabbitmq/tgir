@@ -178,7 +178,7 @@ releases-helm:
 
 .PHONY: help
 help:
-	@awk -F':+ |##' '/^[^\.][0-9a-zA-Z\._\-%]+:+.+##.+$$/ { printf "\033[36m%-30s\033[0m %s\n", $$1, $$3 }' $(MAKEFILE_LIST) \
+	@awk -F':+ |##' '/^[^\.][0-9a-zA-Z\._\-%]+:+.+##.+$$/ { printf "\033[36m%-32s\033[0m %s\n", $$1, $$3 }' $(MAKEFILE_LIST) \
 	| sort
 
 define MAKE_TARGETS

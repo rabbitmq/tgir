@@ -3,6 +3,7 @@
 * Proposed via [rabbitmq/tgir#4](https://github.com/rabbitmq/tgir/issues/4)
 * Hosted by [@gerhardlazu](https://twitter.com/gerhardlazu)
 * Published on: 2020-03-27
+* Video: https://www.youtube.com/watch?v=EWU7WCqD_YA
 
 <a href="https://www.youtube.com/watch?v=EWU7WCqD_YA" target="_blank"><img src="video.jpg" border="50" /></a>
 
@@ -15,6 +16,7 @@ To wrap-up, we will build a Docker image and verify that the fix is ready to shi
 
 To get the best out of this episode, I encourage you to follow along.
 All commands are available as make targets in this episode's directory.
+
 
 
 ## Timeline
@@ -37,12 +39,14 @@ All commands are available as make targets in this episode's directory.
 - [00:47:36](https://www.youtube.com/watch?v=EWU7WCqD_YA&t=2856s) - In the next episode...
 
 
+
 ## Links
 
 - [Work with ease on multiple RabbitMQ sub-projects, e.g. core broker, plugins and some client libraries](https://github.com/rabbitmq/rabbitmq-public-umbrella)
 - [rabbitmq-server issues #2254: Node can use significant (e.g. 80GB) amounts of RAM during startup](https://github.com/rabbitmq/rabbitmq-server/issues/2254)
   - [rabbitmq-server PR #2279: Reduce memory usage during startup](https://github.com/rabbitmq/rabbitmq-server/pull/2279)
   - [rabbitmq-common PR #368: Add `worker_pool:dispatch_sync` function](https://github.com/rabbitmq/rabbitmq-common/pull/368)
+
 
 
 ## Make targets
@@ -60,6 +64,7 @@ switch-to-3.8.x             Switch local copy to v3.8.x
 switch-to-3.9.x             Switch local copy to v3.9.x
 which-release-series        Show which release series we are currently on
 ```
+
 
 
 ## Notes

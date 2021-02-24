@@ -3,11 +3,14 @@
 * Proposed via [rabbitmq/tgir#17](https://github.com/rabbitmq/tgir/issues/17)
 * Hosted by [@gerhardlazu](https://twitter.com/gerhardlazu) & [@MichalKuratczyk](https://twitter.com/michalkuratczyk)
 * Published on: 2020-11-10
+* Video: https://www.youtube.com/watch?v=NWISW6AwpOE
 
 <a href="https://www.youtube.com/watch?v=NWISW6AwpOE" target="_blank"><img src="video.jpg" border="50" /></a>
 
 You have a few RabbitMQ deployments. How do you monitor them?
+
 You have heard of the [Grafana dashboards that team RabbitMQ maintains](https://grafana.com/orgs/rabbitmq), maybe from this [RabbitMQ Summit 2019 talk](https://www.youtube.com/watch?v=L-tYXpirbpA) or from the official [Monitoring with Prometheus & Grafana](https://www.rabbitmq.com/prometheus.html) guide. But how do you actually set them up?
+
 And what about the default metrics configuration? Can this be improved?
 
 For speed and convenience, we set up K3S on a Linux host ([we had some Equinix Metal credits](https://info.equinixmetal.com/changelog) that we put to good use) and then:
@@ -17,6 +20,7 @@ For speed and convenience, we set up K3S on a Linux host ([we had some Equinix M
 * We deploy a few RabbitMQ workloads and look at their behaviour via Grafana, paying special attention to memory pressure coming from the metrics system.
 
 If your RabbitMQ nodes run many queues, channels & connections and you are using the default metrics configuration, this will help you understand how to optimise that.
+
 
 
 ## LINKS

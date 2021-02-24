@@ -3,6 +3,7 @@
 * Proposed by [@Farkie](https://github.com/Farkie) via [rabbitmq/tgir#5](https://github.com/rabbitmq/tgir/issues/5) & [@lyrixx](https://github.com/lyrixx) via [rabbitmq/discussions#59](https://github.com/rabbitmq/discussions/issues/59)
 * Hosted by [@gerhardlazu](https://twitter.com/gerhardlazu)
 * Published on: 2020-02-28
+* Video: https://www.youtube.com/watch?v=dkAhsp-Oxf4
 
 <a href="https://www.youtube.com/watch?v=dkAhsp-Oxf4" target="_blank"><img src="video.png" border="50" /></a>
 
@@ -12,6 +13,7 @@ We will be covering the interactions between RabbitMQ, Erlang Memory Allocators 
 There is an unexpected twist - a.k.a. The One Hour Gap - as well as 2 short follow-ups to last month's episode.
 
 As always, you can follow along - all commands are available as make targets in this episode's directory.
+
 
 
 ## Timeline
@@ -30,6 +32,7 @@ As always, you can follow along - all commands are available as make targets in 
 - [00:34:34](https://www.youtube.com/watch?v=dkAhsp-Oxf4&t=2074s) - TGIR S01E01 follow-up: RabbitMQ 3.6 to 3.8 in-place upgrade
 - [00:36:16](https://www.youtube.com/watch?v=dkAhsp-Oxf4&t=2176s) - TGIR S01E01 follow-up: RabbitMQ node startup with many vhosts
 - [00:37:53](https://www.youtube.com/watch?v=dkAhsp-Oxf4&t=2273s) - [Marques Johansson is paying attention](https://twitter.com/gerhardlazu/status/1223289151086350338)! TGIR is also inspired by [TBS](https://www.youtube.com/channel/UC19FgzMBMqBro361HbE46Fw), not just [TGIK](https://www.youtube.com/playlist?list=PL7bmigfV0EqQzxcNpmcdTJ9eFRPBe-iZa) 🙌
+
 
 
 ## Links
@@ -52,12 +55,14 @@ As always, you can follow along - all commands are available as make targets in 
 - [@displague](https://github.com/displague) is paying attention: [TGIR is a combination of TGIK & TBS](https://twitter.com/gerhardlazu/status/1223289151086350338)
 
 
+
 ## Screenshots
 
 <img src="RabbitMQ-Overview-50mil-messages-durable-q.png" border="50" />
 <img src="Erlang-Memory-Allocators-50mil-messages-durable-q.png" border="50" />
 
 Find more screenshots in the directory.
+
 
 
 ## Make targets

@@ -1,0 +1,23 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: cluster-latency
+  namespace: chaos-testing
+spec:
+  action: delay
+  mode: one
+  selector:
+    namespaces:
+    - default
+    labelSelectors:
+      "app.kubernetes.io/component": "rabbitmq"
+  direction: both
+  target:
+    selector:
+      namespaces:
+      - default
+      labelSelectors:
+        "app.kubernetes.io/component": "rabbitmq"
+    mode: all
+  delay:
+    latency: "1000ms"

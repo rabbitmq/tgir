@@ -1,0 +1,13 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: kill-rmq-pod-every-5m
+  namespace: chaos-testing
+spec:
+  action: pod-kill
+  mode: one
+  selector:
+    labelSelectors:
+      "app.kubernetes.io/component": "rabbitmq"
+  scheduler:
+    cron: "@every 5m"

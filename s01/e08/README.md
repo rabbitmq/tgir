@@ -3,11 +3,14 @@
 * Proposed via [rabbitmq/tgir#16](https://github.com/rabbitmq/tgir/issues/16)
 * Hosted by [@gerhardlazu](https://twitter.com/gerhardlazu) & [@GSantomaggio](https://twitter.com/GSantomaggio)
 * Published on: 2020-12-31
+* Video: https://www.youtube.com/watch?v=mPuMBB9_MRI
 
 <a href="https://www.youtube.com/watch?v=mPuMBB9_MRI" target="_blank"><img src="video.jpg" border="50" /></a>
 
 How do you make your RabbitMQ clusters public & secure? Think HTTPS & AMQPS.
+
 What about using a single IP for multiple RabbitMQ clusters?
+
 And what about connection throttling?
 
 Gerhard & Gabriele try out RabbitMQ Cluster Operator v1.3, cert-manager v1.1 & Traefik v2.3 on Digital Ocean Kubernetes v1.19.3.
