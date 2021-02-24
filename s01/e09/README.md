@@ -17,6 +17,10 @@ We have at our disposal a wide variety of tooling for the Kubernetes infrastruct
 
 In this episode, we give you all the tools to set you up to make these discoveries yourself, and show you some of the interesting behaviours that we have discovered.
 
+And here is a follow-up with the Chaos Mesh Community from January 28, 2021: https://twitter.com/chaos_mesh/status/1354114146443423746
+
+<a href="https://twitter.com/chaos_mesh/status/1354114146443423746" target="_blank"><img src="rabbitmq-chaos-mesh-community-meetup-january-2021.jpg" border="50" /></a>
+
 
 
 ## LINKS
@@ -25,6 +29,7 @@ In this episode, we give you all the tools to set you up to make these discoveri
 * [RabbitMQ Cluster Kubernetes Operator](https://github.com/rabbitmq/cluster-operator) - to easily spin up RabbitMQ Clusters in Kubernetes
 * [TGIR S01E07](https://www.youtube.com/watch?v=NWISW6AwpOE) - Setting up the monitoring framework used in this episode
 * [Cloudflare blog about their partial network partitions](https://blog.cloudflare.com/a-byzantine-failure-in-the-real-world/)
+* [FOLLOW-UP: Chaos Mesh Community Meetup - Testing RabbitMQ Resiliency with Chaos Mesh - Jan 28, 2021](https://twitter.com/chaos_mesh/status/1354114146443423746)
 
 
 
