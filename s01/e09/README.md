@@ -17,10 +17,6 @@ We have at our disposal a wide variety of tooling for the Kubernetes infrastruct
 
 In this episode, we give you all the tools to set you up to make these discoveries yourself, and show you some of the interesting behaviours that we have discovered.
 
-And here is a follow-up with the Chaos Mesh Community from January 28, 2021: https://twitter.com/chaos_mesh/status/1354114146443423746
-
-<a href="https://twitter.com/chaos_mesh/status/1354114146443423746" target="_blank"><img src="rabbitmq-chaos-mesh-community-meetup-january-2021.jpg" border="50" /></a>
-
 
 
 ## LINKS
@@ -71,3 +67,11 @@ teardown-rabbitmq-operator        Teardown the RabbitMQ Cluster Operator
 watch-instances                   Watch all instances
 watch-nodes                       Watch all K8S nodes
 ```
+
+
+
+## FOLLOW-UP
+
+And here is a follow-up with the Chaos Mesh Community from January 28, 2021: https://twitter.com/chaos_mesh/status/1354114146443423746
+
+<a href="https://twitter.com/chaos_mesh/status/1354114146443423746" target="_blank"><img src="rabbitmq-chaos-mesh-community-meetup-january-2021.jpg" border="50" /></a>
