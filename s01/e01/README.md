@@ -5,6 +5,9 @@
 * Proposed by [@dlresende](https://twitter.com/dlresende) via [rabbitmq/tgir#2](https://github.com/rabbitmq/tgir/issues/2)
 * Hosted by [@gerhardlazu](https://twitter.com/gerhardlazu)
 * Published on: 2020-01-31
+* Video: https://www.youtube.com/watch?v=DynCqFtnSoY
+
+
 
 ## Timeline
 

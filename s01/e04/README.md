@@ -3,6 +3,7 @@
 * Proposed via [rabbitmq/tgir#4](https://github.com/rabbitmq/tgir/issues/4)
 * Hosted by [@gerhardlazu](https://twitter.com/gerhardlazu)
 * Published on: 2020-04-30
+* Video: https://www.youtube.com/watch?v=9q-_DLfhfYg
 
 <a href="https://www.youtube.com/watch?v=9q-_DLfhfYg" target="_blank"><img src="video.jpg" border="50" /></a>
 
