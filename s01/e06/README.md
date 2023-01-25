@@ -1,8 +1,8 @@
 # TGIR S01E06: How to run a reliable RabbitMQ on K8S
 
 
-**Warning**
-This example is intended to demonstrate some of the functionality provided by the [RabbitMQ Cluster Operator](https://github.com/rabbitmq/cluster-operator). It is not intended as a guide for running RabbitMQ on Kubernetes. The RabbitMQ team *strongly* recommend using the operator.
+> **Warning**
+> This example is intended to demonstrate some of the functionality provided by the [RabbitMQ Cluster Operator](https://github.com/rabbitmq/cluster-operator). It is not intended as a guide for running RabbitMQ on Kubernetes. The RabbitMQ team *strongly* recommend using the operator.
 
 * Proposed via [rabbitmq/tgir#13](https://github.com/rabbitmq/tgir/issues/13)
 * Hosted by [@gerhardlazu](https://twitter.com/gerhardlazu)
